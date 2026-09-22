@@ -8,7 +8,7 @@ Fuente: repositorio público Organima. Runtime aislado /opt/organima; datos /var
 ## Público
 Instancia de demostración sin claves externas y con ORGANIMA_MODE=simulation, PORT=3210, HOST=127.0.0.1, ORGANIMA_DATA_DIR=/var/lib/organima, ORGANIMA_OPERATOR_TOKEN=demo. El acceso demo es deliberadamente público: sólo opera datos sintéticos. No usar ese token para una instalación live.
 
-Nginx termina TLS y reenvía al puerto local. Dominio de demostración propuesto: organima.187-77-9-8.sslip.io. No anunciarlo activo hasta verificar HTTPS y flujos.
+Nginx termina TLS y reenvía al puerto local. Dominio de demostración: organima.187-77-9-8.sslip.io. No anunciarlo activo hasta verificar HTTPS y flujos.
 
 ## Release
 1. Pruebas y build locales; juez independiente; GitHub CI verde.
