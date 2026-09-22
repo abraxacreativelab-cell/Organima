@@ -27,3 +27,5 @@
 
 ## Comparación de voz en curso
 Criterios y bloqueos en [docs/VOICE-LAB-GATES.md](docs/VOICE-LAB-GATES.md). No desplegada; falta NVIDIA Speech y revisión Opus.
+
+Prueba de agentes completos: [docs/VOICE-AGENTS-GATES.md](docs/VOICE-AGENTS-GATES.md). NVIDIA ya autorizado; revisión Opus pendiente.

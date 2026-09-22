@@ -1,3 +1,5 @@
+> Actualización: ya funciona la prueba de agentes completos con NVIDIA Speech y ElevenLabs. Instrucciones vigentes: [VOICE-AGENTS.md](VOICE-AGENTS.md). Las secciones de bloqueo NVIDIA que siguen son el registro de la etapa anterior.
+
 # Alcance actual: agentes conversacionales completos
 
 El usuario eligió **ElevenLabs Agents completo vs. agente NVIDIA completo**. El laboratorio TTS descrito debajo es diagnóstico auxiliar y NO satisface esa comparación por sí solo.

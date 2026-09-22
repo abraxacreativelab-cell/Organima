@@ -11,3 +11,6 @@ runtime/
 .cuadrilla/**/estado.json
 
 .cuadrilla/**/bitacora.jsonl
+
+__pycache__/
+*.pyc

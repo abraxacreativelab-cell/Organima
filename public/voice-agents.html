@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="es-MX">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Conversaciones · Organima</title
+  ><link rel="icon" href="data:," /><style>
+    :root {
+      color-scheme: dark;
+      font-family: system-ui;
+      background: #0a1019;
+      color: #edf4ff;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+    }
+    main {
+      max-width: 950px;
+      margin: auto;
+      padding: 36px 22px;
+    }
+    small,
+    .muted {
+      color: #a5b6cc;
+    }
+    h1 {
+      font-size: clamp(28px, 5vw, 44px);
+      margin: 10px 0;
+    }
+    p {
+      line-height: 1.6;
+    }
+    .panel {
+      border: 1px solid #28384d;
+      background: #111d2c;
+      border-radius: 20px;
+      padding: 22px;
+      margin: 20px 0;
+      overflow: auto;
+    }
+    .choices {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    button,
+    select {
+      font: inherit;
+      border-radius: 12px;
+      padding: 13px 18px;
+      border: 1px solid #416281;
+      background: #182c41;
+      color: #fff;
+      cursor: pointer;
+    }
+    button.primary {
+      background: #80e3cf;
+      color: #071e21;
+      border: 0;
+      font-weight: 700;
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+    select {
+      max-width: 100%;
+    }
+    .orb {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #a0ffdf, #326b89);
+      box-shadow: 0 0 35px #61cfb42b;
+      margin: 20px 0;
+    }
+    .live .orb {
+      animation: breathe 1.4s infinite alternate;
+    }
+    @keyframes breathe {
+      to {
+        box-shadow: 0 0 55px #61cfb470;
+        transform: scale(1.06);
+      }
+    }
+    #state {
+      font-size: 21px;
+    }
+    #error {
+      color: #ffd094;
+      white-space: pre-wrap;
+    }
+    #transcript {
+      list-style: none;
+      padding: 0;
+      max-height: 310px;
+      overflow: auto;
+    }
+    li {
+      padding: 10px 0;
+      border-bottom: 1px solid #263348;
+    }
+    li strong {
+      display: block;
+      font-size: 12px;
+      color: #80e3cf;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 460px;
+    }
+    td,
+    th {
+      text-align: left;
+      padding: 10px;
+      border-bottom: 1px solid #263348;
+      font-size: 14px;
+    }
+    #interim {
+      color: #91afc9;
+      font-style: italic;
+      min-height: 24px;
+    }
+    a {
+      color: #80e3cf;
+    }
+  </style>
+  <main>
+    <small>ORGANIMA · LABORATORIO DE CONVERSACIÓN</small>
+    <h1>Habla con los dos agentes.</h1>
+    <p class="muted">
+      Compara cómo escuchan, cuándo responden y qué sucede al interrumpirlos.
+    </p>
+    <section class="panel" id="call">
+      <div class="choices">
+        <select id="provider" aria-label="Agente">
+          <option value="elevenlabs">ElevenLabs Agents completo</option>
+          <option value="nvidia">Agente NVIDIA completo</option></select
+        ><button class="primary" id="start">Iniciar conversación</button
+        ><button id="stop" disabled>Terminar</button>
+      </div>
+      <p id="stack" class="muted"></p>
+      <div class="orb"></div>
+      <div id="state">Listo para comenzar</div>
+      <p id="error" role="status"></p>
+      <p id="interim"></p>
+      <small
+        >Permite el micrófono y usa audífonos. Habla con naturalidad; puedes
+        interrumpir a la agente. Cada sesión empieza con contexto nuevo.</small
+      >
+    </section>
+    <section class="panel">
+      <h2>Conversación</h2>
+      <ol id="transcript"></ol>
+    </section>
+    <section class="panel">
+      <h2>Tiempo de respuesta</h2>
+      <p class="muted">
+        Estimación entre la última actividad de tu voz y el inicio de respuesta.
+        El ruido y la detección de audio pueden afectar la medición. Los turnos
+        interrumpidos se identifican; el saludo inicial no se mide.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Agente</th>
+            <th>Pausa → respuesta</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="metrics"></tbody>
+      </table>
+    </section>
+    <p class="muted">
+      Esta prueba conserva contexto durante la llamada. Todavía no conecta las
+      memorias compartidas, cámaras ni robot. ElevenLabs usa Scribe + Gemini 2.5
+      Flash + Eleven Flash. NVIDIA usa Parakeet + Nemotron en Nebius + Magpie
+      Isabela. La comparación evalúa sistemas completos, no un solo modelo.
+    </p>
+  </main>
+  <script type="module" src="/voice-agents.bundle.js"></script>
+</html>

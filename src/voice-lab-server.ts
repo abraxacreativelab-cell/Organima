@@ -16,6 +16,7 @@ import 'dotenv/config';
 import express from 'express';
 import { resolve } from 'node:path';
 import { createVoiceLab } from './voice-lab.js';
+import {createVoiceAgents} from './voice-agents.js';
 
 const HOST = '127.0.0.1';
 const DEFAULT_PORT = 3212;
@@ -35,9 +36,11 @@ const lab = createVoiceLab({ env: process.env });
 
 const app = express();
 app.use(lab.app);
+const agents=createVoiceAgents();
+app.use('/api/lab',agents.router);
 app.use(
   express.static(resolve(process.cwd(), 'public'), {
-    index: 'voice-lab.html',
+    index: 'voice-agents.html',
     fallthrough: true,
   }),
 );
@@ -46,8 +49,11 @@ const server = app.listen(port, HOST, () => {
   console.log(`Laboratorio de voz: http://${HOST}:${port}`);
 });
 
+agents.attach(server);
+
 server.on('error', (error: NodeJS.ErrnoException) => {
   console.error(`No se pudo abrir el laboratorio en ${HOST}:${port}: ${error.code ?? error.message}`);
+  agents.close();
   lab.close();
   process.exitCode = 1;
 });
@@ -57,6 +63,7 @@ function shutdown(signal: string): void {
   if (closing) return;
   closing = true;
   console.log(`${signal}: cerrando el laboratorio.`);
+  agents.close();
   lab.close();
   server.close(() => process.exit(0));
   // Sin fugas: si el cierre no termina en dos segundos, se sale de todos modos.

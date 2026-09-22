@@ -9,20 +9,26 @@
   "scripts": {
     "dev": "tsx src/server.ts",
     "start": "node dist/server.js",
-    "build": "tsc",
+    "build": "tsc && npm run build:voice",
     "test": "tsx --test test/*.test.ts",
     "check": "tsc --noEmit",
-    "test:browser": "tsx scripts/browser-check.ts"
+    "test:browser": "tsx scripts/browser-check.ts",
+    "build:voice": "esbuild scripts/voice-agents-client.js --bundle --format=esm --minify --outfile=public/voice-agents.bundle.js",
+    "voice:lab": "tsx src/voice-lab-server.ts"
   },
   "dependencies": {
+    "@elevenlabs/client": "^1.25.0",
     "dotenv": "^16.6.0",
     "express": "^5.1.0",
+    "ws": "^8.21.3",
     "zod": "^3.25.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@types/express": "^5.0.0",
     "@types/node": "^22.0.0",
+    "@types/ws": "^8.18.1",
+    "esbuild": "^0.28.2",
     "tsx": "^4.20.0",
     "typescript": "^5.9.0"
   }

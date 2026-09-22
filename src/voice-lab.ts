@@ -42,7 +42,7 @@ export const VOICE_LAB_TTS_TIMEOUT_MS = 30_000;
 export const VOICE_LAB_MAX_TTS_BYTES = 4 * 1024 * 1024;
 /** Petición de brevedad que acompaña a cada turno (el cerebro ya responde breve, aquí se insiste). */
 export const VOICE_LAB_BREVITY_INSTRUCTION =
-  'Laboratorio de voz: responde breve, en dos o tres frases como máximo, para mantener baja la latencia.';
+  'Laboratorio de conversación sin cámaras, robot ni memoria persistente conectados. Sólo conoces lo dicho en esta llamada; no afirmes que ves objetos o que guardaste algo en el sistema. Responde breve, en una o dos frases, sin emojis ni listas.';
 
 /** Base oficial del endpoint de síntesis en streaming de ElevenLabs. */
 export const ELEVENLABS_TTS_BASE = 'https://api.elevenlabs.io/v1/text-to-speech';
@@ -645,9 +645,8 @@ export function createVoiceLab(options: VoiceLabOptions = {}): VoiceLab {
   });
 
   // Cualquier ruta del laboratorio que no exista responde JSON, nunca HTML de Express.
-  app.use('/api/lab', (_req, res) => {
-    res.status(404).json({ error: 'Ruta del laboratorio no encontrada.', code: 'not_found' });
-  });
+
+  app.use('/api/lab', (req,res,next) => { if(req.path.startsWith('/agents/')) {next();return;} res.status(404).json({error:'Ruta del laboratorio no encontrada.',code:'not_found'}); });
 
   app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
     void next;
