@@ -753,6 +753,7 @@ export function createCognition(options: {
       const body = {
         model,
         max_tokens: DECISION_MAX_TOKENS,
+        response_format: { type: 'json_object' },
         // Lightning devuelve razonamiento dentro de `content` y trunca si no se apaga el thinking.
         chat_template_kwargs: { enable_thinking: false },
         messages: [

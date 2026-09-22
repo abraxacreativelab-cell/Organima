@@ -391,6 +391,7 @@ test('decide: payload, auth, modelo y JSON estricto contra NVIDIA', async () => 
   assert.deepEqual(call.body, {
     model: LIVE_ENV.NEBIUS_CHAT_MODEL,
     max_tokens: DECISION_MAX_TOKENS,
+    response_format: { type: 'json_object' },
     chat_template_kwargs: { enable_thinking: false },
     messages: [
       { role: 'system', content: DECISION_SYSTEM_PROMPT },

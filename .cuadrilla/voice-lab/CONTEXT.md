@@ -1,0 +1,5 @@
+Usuario quiere HABLAR con agente y comparar latencia real. Muestras grabadas no cumplen. Default comparación mismo Organima cambiando TTS, pendiente aclaración si quiere ElevenLabs Agents completo. Clave NVIDIA falta y se solicitó al usuario. Arquitecto hará prueba real; constructor usa mocks offline. Otra conversación trabaja hardware main: no tocar. Modelos: DeepSeek construye, Opus5 revisa.
+Fuentes verificadas: https://docs.nvidia.com/nim/speech/26.07.0/reference/api-references/tts/http-tts.html y https://build.nvidia.com/nvidia/magpie-tts-multilingual/api y https://elevenlabs.io/docs/eleven-api/concepts/audio-streaming . NVIDIA synthesize_online documentado en NIM; hosted mismo soporte no comprobado. No cambiar proveedor ni enviar Nebius key a NVIDIA.
+
+## Corrección explícita del usuario
+2026-09-22: eligió ElevenLabs Agents COMPLETO vs agente NVIDIA, no comparación TTS. Laboratorio TTS queda diagnóstico auxiliar, no entrega aceptada. ElevenLabs convai/agents GET200 autorizado; crear agente independiente Organima sin tocar agentes de otros proyectos. NVIDIA_API_KEY sigue ausente. Opus OAuth expirado; no revisión aprobada y fallback Codex detenido.
