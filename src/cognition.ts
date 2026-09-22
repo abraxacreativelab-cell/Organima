@@ -8,8 +8,8 @@
  * - Nunca se ecoan tokens, cabeceras ni cuerpos de error crudos.
  * - El modo `simulation` es determinista, se etiqueta y jamás toca la red.
  * - El estado de chat, visión y Tavily es independiente.
- * - La atención la decide NVIDIA en Nebius (chat-completions) con JSON explícito; ya no se usa
- *   Jev ni ninguna ruta TypeSafe/OpenRouter.
+ * - La atención usa Jev vía Vercel cuando ORGANIMA_ATTENTION_PROVIDER=jev; NVIDIA sigue
+ *   disponible con selección explícita o como valor por defecto para instalaciones anteriores.
  * - Las peticiones de texto y de decisión envían `chat_template_kwargs.enable_thinking=false`; una
  *   respuesta truncada (`finish_reason: 'length'`) nunca se usa como respuesta válida.
  * - El prefijo `nvidia/` es obligatorio para el chat y el razonamiento (atención); la visión acepta
@@ -17,6 +17,7 @@
  * - Este módulo no tiene efectos secundarios al importarse: sólo `createCognition` arma el puerto.
  */
 import { z } from 'zod';
+import { createJevAttention } from './attention.js';
 import type {
   AttentionDecision,
   ChatReply,
@@ -541,6 +542,11 @@ export function createCognition(options: {
   const reasoningModel = reasoningModelEnv ?? chatModel;
   const visionModel = readEnvValue(env, 'NEBIUS_VISION_MODEL');
   const tavilyApiKey = readEnvValue(env, 'TAVILY_API_KEY');
+  const attentionProvider = readEnvValue(env, 'ORGANIMA_ATTENTION_PROVIDER') ?? 'nvidia';
+  if (attentionProvider !== 'jev' && attentionProvider !== 'nvidia') {
+    throw new CognitionError('invalid_input', 'ORGANIMA_ATTENTION_PROVIDER debe ser jev o nvidia');
+  }
+  const jev = attentionProvider === 'jev' ? createJevAttention({ env, fetcher }) : undefined;
 
   const secrets: string[] = [nebiusApiKey, tavilyApiKey].filter(
     (value): value is string => typeof value === 'string' && value.length > 0,
@@ -613,7 +619,7 @@ export function createCognition(options: {
   }
 
   function statuses(): ProviderStatus[] {
-    return PROVIDER_ORDER.map((key) => {
+    const rows = PROVIDER_ORDER.map((key) => {
       const config = key === 'chat' ? chatRowConfig() : providerConfig(key);
       const status: ProviderStatus = {
         name: PROVIDER_NAMES[key],
@@ -635,6 +641,13 @@ export function createCognition(options: {
       if (runtime[key].detail !== undefined && status.state !== 'ready') status.detail = runtime[key].detail;
       return status;
     });
+    if (jev) {
+      const status = jev.status();
+      rows.push(mode === 'simulation'
+        ? { ...status, state: 'simulation', detail: 'modo simulación: no se consulta Jev' }
+        : status);
+    }
+    return rows;
   }
 
   async function postJson(
@@ -746,6 +759,7 @@ export function createCognition(options: {
   async function decide(state: string): Promise<AttentionDecision> {
     const cleanState = requireText(state, 'decide', 'state');
     if (mode === 'simulation') return simulateDecision(cleanState);
+    if (jev) return jev.decide(cleanState);
 
     const apiKey = requireApiKey('chat');
     const model = requireReasoningModel();
@@ -812,7 +826,7 @@ export function createCognition(options: {
     // Piso determinista: si la pregunta actual pide la web explícitamente, se investiga aunque
     // el modelo no lo haya marcado. La decisión devuelta refleja lo que de verdad se hizo.
     const effectiveDecision: AttentionDecision = questionNeedsWeb(cleanMessage)
-      ? { ...decision, research: true }
+      ? { ...decision, research: true, ...(decision.provider === 'jev' && !decision.research ? { researchOverride: 'explicit-web-request' as const } : {}) }
       : decision;
 
     let sources: ResearchSource[] = [];
@@ -833,7 +847,9 @@ export function createCognition(options: {
 
     try {
       const apiKey = requireApiKey('chat');
-      const model = requireChatModel();
+      const model = effectiveDecision.provider === 'jev' && effectiveDecision.escalate
+        ? requireReasoningModel()
+        : requireChatModel();
       const body = {
         model,
         max_tokens: CHAT_MAX_TOKENS,

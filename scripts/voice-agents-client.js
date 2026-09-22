@@ -458,6 +458,10 @@ fetch("/api/lab/agents/status")
   .then(checked)
   .then((r) => r.json())
   .then((s) => {
+    if (s.attentionProvider === "jev") {
+      stacks.nvidia = "Parakeet (NVIDIA) → Jev (Vercel) → Nemotron (Nebius) → Magpie Isabela (NVIDIA)";
+      $("stack").textContent = stacks[provider];
+    }
     if (!s.nvidia) {
       $("provider").querySelector("[value=nvidia]").disabled = true;
       error(s.nvidiaReason);

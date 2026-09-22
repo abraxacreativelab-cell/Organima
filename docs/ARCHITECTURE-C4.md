@@ -1,10 +1,10 @@
 # Organima — arquitectura C4
 
-Fecha: 22 de septiembre de 2026. Base de código: `33699e2`, rama `feat/voice-latency-lab`. Este documento describe la implementación inspeccionada, no promete que todos los componentes estén desplegados juntos. La robótica que se construye en otra conversación queda fuera de esta verificación.
+Fecha: 22 de septiembre de 2026. Base C4: `33699e2`; revisión Jev Gateway sobre `8cce478`, rama `feat/voice-latency-lab`. Este documento describe la implementación inspeccionada, no promete que todos los componentes estén desplegados juntos. La robótica que se construye en otra conversación queda fuera de esta verificación.
 
 ## Cómo leer el mapa
 
-Los cuatro niveles amplían el mismo sistema: **contexto → contenedores → componentes → código**. “Contenedor” significa aplicación ejecutable o almacén de datos; no implica Docker. Las flechas indican quién inicia la interacción y llevan su propósito o protocolo. Una flecha discontinua marcada **pendiente** es una integración propuesta. Las implementaciones en modo simulación no son evidencia de funcionamiento físico.
+El mapa de sistemas distingue núcleo y laboratorio. Cada zoom mantiene su alcance y los cuatro niveles se leen como: **contexto → contenedores → componentes → código**. “Contenedor” significa aplicación ejecutable o almacén de datos; no implica Docker. Las vistas C1/C2 usan flechas de dependencia: el origen solicita una capacidad al destino. Los flujos de datos y secuencias se identifican aparte. En C1 se omiten protocolos; en C2 se especifican. Una flecha discontinua marcada **pendiente** es una integración propuesta. Las implementaciones en modo simulación no son evidencia de funcionamiento físico.
 
 | Área | Estado en esta revisión |
 |---|---|
@@ -13,146 +13,217 @@ Los cuatro niveles amplían el mismo sistema: **contexto → contenedores → co
 | Laboratorio conversacional | Aplicación local independiente; NVIDIA y ElevenLabs Agents completos probados con servicios reales en el trabajo previo. Rama de PR, no integrado en la demo pública. |
 | Robot | Máquina de estados y simulador implementados. El adaptador de esta rama rechaza objetivos en modo real porque no tiene conexión física. |
 | Visión | MiniCPM en Nebius. **No es actualmente un modelo NVIDIA.** |
-| Jev / Prime Agent | Jev excluido; Prime Agent evaluado como propuesta, sin integración en el código. |
+| Jev / Prime Agent | Adaptador Jev vía Vercel integrado; primera llamada real bloqueada por facturación (403). Prime Agent sigue sin integración. |
 
-## Nivel 1 · Contexto del sistema
+## Mapa de sistemas · Organima y su laboratorio
 
-Organima permite que un operador converse, observe un entorno, consulte recuerdos y asigne un objetivo acotado. El laboratorio forma parte del proyecto, pero tiene sesiones y datos separados del núcleo.
-
-```mermaid
-flowchart TB
-  U["Santiago / operador
-Persona: conversa, observa, ordena y detiene"]
-  O["ORGANIMA
-Sistema software
-Núcleo con memoria + laboratorio de voz aislado"]
-  N["Nebius Token Factory
-Sistema externo
-Inferencia NVIDIA y MiniCPM"]
-  S["NVIDIA Speech / NVCF
-Sistema externo
-Reconocimiento Riva + síntesis Magpie"]
-  E["ElevenLabs
-Sistema externo
-Agents completo y API de síntesis"]
-  T["Tavily
-Sistema externo
-Investigación web con fuentes"]
-  G["GitHub · Organima
-Sistema externo
-Código y conocimiento estable revisado"]
-  R["Robot físico / Jetson / Arduino
-Sistema externo pendiente de conexión
-Movimiento y seguridad local"]
-  U -->|"Interfaz web, micrófono, imágenes y objetivos"| O
-  O -->|"HTTPS: razonamiento, conversación y visión"| N
-  O -->|"Laboratorio: audio por gRPC TLS / HTTPS"| S
-  O -->|"Laboratorio: WebRTC; núcleo: TTS por HTTPS"| E
-  O -->|"HTTPS: consultas y recuperación de fuentes"| T
-  U -->|"Revisión y publicación del proyecto"| G
-  G -->|"Git: código y knowledge al preparar el despliegue"| O
-  O <-.->|"PENDIENTE: objetivos, parada y telemetría"| R
-```
-
-**Frontera de responsabilidad.** Tavily es el puente de investigación sobre el mundo exterior; no sustituye los servicios de inferencia, audio ni Git. NVIDIA Speech usa credenciales y endpoints distintos de Nebius. Los modelos de ElevenLabs Agents se ejecutan dentro de la plataforma de ElevenLabs. GitHub no recibe consultas por cada turno de conversación.
-
-## Nivel 2 · Contenedores y ubicación
-
-### 2A · Núcleo
-
-El núcleo es un monolito modular: sus células lógicas no son microservicios independientes. El grafo y los contextos viven dentro del proceso del servidor; el journal y los archivos de conocimiento sí tienen almacenamiento propio.
+**Tipo:** paisaje de sistemas (*system landscape*), vista complementaria. **Alcance:** proyecto Organima, no todo ABRAXA. **Audiencia:** equipo y presentación del proyecto. Separamos el núcleo —operación con memoria y objetivos— del laboratorio —comparación de agentes de voz— como dos sistemas de interés por su función y sus sesiones independientes. Compartir código o repositorio no implica compartir estado.
 
 ```mermaid
-flowchart TB
-  U["Operador"]
-  subgraph B["Dispositivo del operador"]
-    UI["Web Organima
-Contenedor: HTML / JavaScript
-Panel, chat, cámara y objetivos"]
+---
+title: Paisaje de sistemas — Proyecto Organima
+config:
+  layout: elk
+---
+flowchart LR
+  U["Operador\n[Persona]\nUsa el organismo y compara conversaciones"]
+  subgraph OWN["Responsabilidad del equipo Organima"]
+    O["Organima — núcleo\n[Sistema software]\nObservación, memoria y objetivos"]
+    L["Laboratorio de voz\n[Sistema software experimental]\nComparación NVIDIA y ElevenLabs"]
   end
-  subgraph H["Host del núcleo · VPS de la demo / host local"]
-    P["Entrada HTTPS
-Nginx / TLS en VPS"]
-    A["API Organima
-Contenedor: Node.js + Express
-src/server.ts · puerto 3210 por defecto
-PM2 en VPS"]
-    J[("Journal de eventos
-Contenedor: archivos JSONL
-runtime / modo / events.jsonl")]
-    K[("Conocimiento estable
-Contenedor: archivos versionados
-knowledge/identity.md + objects.json")]
-  end
-  N["Nebius
-NVIDIA: maestro, atención, conversación
-MiniCPM: visión"]
-  T["Tavily
-Investigación web"]
-  E["ElevenLabs TTS
-Voz del núcleo en modo live configurado"]
-  G["GitHub
-Repositorio Organima"]
-  U -->|"Navegador"| UI
-  UI -->|"HTTPS: REST JSON y SSE"| P
-  P -->|"HTTP: proxy hacia Express"| A
-  A -->|"append + fsync; lectura al arrancar"| J
-  A -->|"Lee al arrancar; inyecta conocimiento"| K
-  G -->|"Checkout / despliegue revisado"| K
-  A -->|"HTTPS: chat/completions"| N
-  A -->|"HTTPS: búsqueda"| T
-  A -->|"HTTPS: texto a MP3; respuesta almacenada en buffer"| E
+  N["Nebius Token Factory\n[Sistema externo]\nRazonamiento, conversación y visión"]
+  V["Vercel AI Gateway / Jev\n[Sistema externo · bloqueado por cuenta]\nEvaluación de atención"]
+  E["ElevenLabs\n[Sistema externo]\nSíntesis y agentes conversacionales"]
+  S["NVIDIA Speech\n[Sistema externo]\nReconocimiento y síntesis"]
+  T["Tavily\n[Sistema externo]\nInvestigación con fuentes web"]
+  U -->|"Consulta recuerdos y asigna objetivos"| O
+  U -->|"Compara conversaciones y latencia"| L
+  O -->|"Solicita razonamiento y percepción"| N
+  L -->|"Genera respuestas del agente NVIDIA"| N
+  O -->|"Solicita evaluación de atención"| V
+  L -->|"Evalúa turnos del agente NVIDIA"| V
+  O -->|"Solicita voz sintetizada"| E
+  L -->|"Abre conversación con agente completo"| E
+  L -->|"Reconoce y sintetiza voz NVIDIA"| S
+  O -->|"Busca evidencia externa"| T
+  L -->|"Investiga si el turno lo necesita"| T
+  KEY["LEYENDA\nAzul: sistema propio · gris: externo · ámbar: bloqueo operativo\nFlecha: dependencia descrita; no prueba disponibilidad\nBorde agrupado: responsabilidad del equipo"]
+  classDef own fill:#dcecff,stroke:#175a9e,color:#122b48
+  classDef external fill:#edf0f3,stroke:#65758a,color:#172435
+  classDef blocked fill:#fff0d5,stroke:#956115,color:#573909
+  classDef legend fill:#fff,stroke:#b8c5d3,color:#394a5f
+  class O,L own
+  class N,E,S,T external
+  class V blocked
+  class KEY legend
 ```
 
-El servidor separa los eventos por modo (`runtime/simulation` y `runtime/live`). En simulación utiliza respuestas/escenarios simulados y desactiva la voz externa del núcleo. El mismo diagrama muestra las dependencias disponibles para el modo real, no llamadas que necesariamente hace la demo simulada.
+No hay una conexión operativa entre laboratorio y núcleo. GitHub pertenece al ciclo de construcción y distribución, no a una consulta de memoria remota por turno. La robótica física pendiente se muestra en su sección de integración futura, no como un sistema ya conectado.
 
-### 2B · Laboratorio local de voz
+## Nivel 1 · Contextos de sistema
+
+### 1A · Contexto de Organima — núcleo
+
+**Alcance:** un sistema, Organima núcleo. **Audiencia:** técnica y no técnica. Esta vista responde quién lo utiliza y qué obtiene de otros sistemas. No representa procesos, librerías, protocolos ni servidores.
 
 ```mermaid
-flowchart TB
-  subgraph PC["Computadora del operador · laboratorio local"]
-    W["Web A/B
-Contenedor: navegador
-Micrófono, SDK ElevenLabs, AudioWorklet y Web Audio"]
-    L["Servidor del laboratorio
-Contenedor: Node.js + Express + WebSocket
-127.0.0.1:3212 · voice-lab-server.ts"]
-    PY["Puente ASR
-Contenedor: subproceso Python por sesión
-nvidia-riva-client / gRPC"]
-  end
-  EA["ElevenLabs Agents
-Scribe + Gemini 2.5 Flash + Eleven Flash v2.5
-Configuración del agente de prueba"]
-  NS["NVIDIA Riva ASR
-grpc.nvcf.nvidia.com:443"]
-  NT["NVIDIA Magpie Multilingual
-HTTPS · síntesis de audio"]
-  NB["Nebius Token Factory
-NVIDIA: atención y conversación"]
-  TV["Tavily
-Sólo si cognition decide investigar"]
-  CORE["Núcleo Organima
-Memoria persistente y objetivos"]
-  W -->|"HTTP: token efímero de ElevenLabs"| L
-  L -->|"HTTPS: solicita token con clave privada"| EA
-  W <-->|"WebRTC: conversación completa"| EA
-  W -->|"WebSocket: PCM16 mono 16 kHz"| L
-  L -->|"stdin: audio PCM"| PY
-  PY <-->|"gRPC TLS: audio / transcripciones parciales y finales"| NS
-  PY -->|"stdout: JSONL de transcripción"| L
-  L -->|"WebSocket: transcripción"| W
-  W -->|"POST /turn: texto e historial de sesión"| L
-  L -->|"HTTPS: decide y reply"| NB
-  L -->|"HTTPS opcional: búsqueda"| TV
-  W -->|"POST /tts: respuesta textual"| L
-  L -->|"HTTPS: synthesize_online"| NT
-  NT -->|"PCM16 mono 22.05 kHz en streaming"| L
-  L -->|"HTTP streaming de PCM"| W
-  L -.->|"PENDIENTE: compartir conversación, memoria y acciones"| CORE
+---
+title: C1 — Contexto del sistema Organima núcleo
+config:
+  layout: elk
+---
+flowchart LR
+  U["Operador\n[Persona]\nSupervisa el entorno y asigna objetivos"]
+  O["Organima — núcleo\n[Sistema software en foco]\nConecta observaciones, recuerdos y objetivos\nDistingue simulación y operación real"]
+  N["Nebius Token Factory\n[Sistema externo]\nProporciona razonamiento, conversación y visión"]
+  V["Vercel AI Gateway / Jev\n[Sistema externo · cuenta bloqueada]\nEvalúa cuándo avisar, investigar o escalar"]
+  T["Tavily\n[Sistema externo]\nAporta fuentes del mundo exterior"]
+  E["ElevenLabs\n[Sistema externo]\nConvierte respuestas en voz"]
+  U -->|"Conversa, aporta imágenes, consulta memoria y asigna objetivos"| O
+  O -->|"Solicita interpretación y generación de respuestas"| N
+  O -->|"Solicita evaluación del estado observado"| V
+  O -->|"Busca evidencia para responder preguntas"| T
+  O -->|"Solicita lectura de respuestas"| E
+  KEY["LEYENDA\nAzul: sistema en foco · gris: dependencias externas\nÁmbar: integrado en código, sin servicio habilitado\nFlecha: solicita una capacidad al destino; no es secuencia temporal"]
+  classDef own fill:#dcecff,stroke:#175a9e,color:#122b48
+  classDef external fill:#edf0f3,stroke:#65758a,color:#172435
+  classDef blocked fill:#fff0d5,stroke:#956115,color:#573909
+  classDef legend fill:#fff,stroke:#b8c5d3,color:#394a5f
+  class O own
+  class N,T,E external
+  class V blocked
+  class KEY legend
 ```
 
-La opción ElevenLabs **no pasa su conversación por Nebius**. La opción NVIDIA utiliza una cadena propia: Riva → atención/conversación en Nebius → Magpie. No son dos voces sobre un mismo cerebro; es la comparación de agentes completos solicitada. El historial NVIDIA vive en la sesión del navegador, el grafo que recibe esta prueba está vacío y no se escribe al journal del núcleo.
+Tavily es el proveedor de investigación web. Nebius y los servicios de voz son dependencias de inferencia; no constituyen fuentes de investigación sustitutivas. La simulación no llama a esas dependencias reales.
+
+### 1B · Contexto del laboratorio de voz
+
+**Alcance:** un sistema experimental independiente. **Audiencia:** equipo que compara agentes. La conversación de ElevenLabs ocurre en su plataforma; la cadena NVIDIA utiliza Nebius para generar respuestas y Jev para evaluar atención cuando está seleccionado.
+
+```mermaid
+---
+title: C1 — Contexto del laboratorio de voz Organima
+config:
+  layout: elk
+---
+flowchart LR
+  U["Operador de pruebas\n[Persona]\nConversa y compara respuesta percibida"]
+  L["Laboratorio de voz\n[Sistema software en foco]\nCompara agentes completos\nSin memoria persistente del núcleo"]
+  E["ElevenLabs Agents\n[Sistema externo]\nConversación completa administrada"]
+  S["NVIDIA Speech\n[Sistema externo]\nTranscribe y sintetiza voz"]
+  N["Nebius Token Factory\n[Sistema externo]\nGenera respuestas del agente NVIDIA"]
+  V["Vercel AI Gateway / Jev\n[Sistema externo · cuenta bloqueada]\nEvalúa atención del agente NVIDIA"]
+  T["Tavily\n[Sistema externo]\nAporta fuentes si el turno lo requiere"]
+  U -->|"Habla, interrumpe y compara latencia"| L
+  L -->|"Abre conversación con el agente ElevenLabs"| E
+  L -->|"Solicita reconocimiento y síntesis"| S
+  L -->|"Solicita respuesta normal o razonamiento escalado"| N
+  L -->|"Solicita evaluación del turno"| V
+  L -->|"Investiga información externa necesaria"| T
+  KEY["LEYENDA\nAzul: sistema en foco · gris: externo · ámbar: bloqueo de cuenta\nFlecha: dependencia funcional; no certifica disponibilidad\nSin conexión actual con memoria o acciones del núcleo"]
+  classDef own fill:#dcecff,stroke:#175a9e,color:#122b48
+  classDef external fill:#edf0f3,stroke:#65758a,color:#172435
+  classDef blocked fill:#fff0d5,stroke:#956115,color:#573909
+  classDef legend fill:#fff,stroke:#b8c5d3,color:#394a5f
+  class L own
+  class E,S,N,T external
+  class V blocked
+  class KEY legend
+```
+
+## Nivel 2 · Contenedores lógicos
+
+Estas vistas amplían cada sistema anterior. Las fronteras agrupan software bajo responsabilidad de Organima; no indican máquinas físicas. Los entornos, puertos y procesos supervisores se describen por separado en [RUNBOOK.md](RUNBOOK.md).
+
+### 2A · Contenedores de Organima — núcleo
+
+**Alcance:** sistema Organima núcleo. **Audiencia:** desarrollo y operación. El núcleo es un monolito modular: las células no son microservicios. Los contextos y la proyección del grafo viven en la aplicación servidor, no en un servicio aparte.
+
+```mermaid
+---
+title: C2 — Contenedores del sistema Organima núcleo
+config:
+  layout: elk
+---
+flowchart LR
+  U["Operador\n[Persona]\nSupervisa el organismo"]
+  subgraph O["Sistema software: Organima — núcleo"]
+    UI["Web Organima\n[Contenedor · HTML / JavaScript]\nPanel, chat, imágenes y objetivos"]
+    A["API Organima\n[Contenedor · Node.js / Express]\nOrquesta cognición, memoria y objetivos"]
+    J[("Journal\n[Contenedor de datos · JSONL]\nConserva eventos por modo")]
+    K[("Conocimiento estable\n[Contenedor de datos · Markdown / JSON]\nIdentidad y conceptos revisados")]
+    UI -->|"Envía solicitudes y se suscribe al estado [HTTP JSON / SSE]"| A
+    A -->|"Lee y agrega eventos durables [filesystem + fsync]"| J
+    A -->|"Carga conocimiento al arrancar [filesystem]"| K
+  end
+  N["Nebius Token Factory\n[Sistema externo]\nNVIDIA: texto · MiniCPM: visión"]
+  V["Vercel AI Gateway / Jev\n[Sistema externo · cuenta bloqueada]\nAtención tipada"]
+  T["Tavily\n[Sistema externo]\nInvestigación web"]
+  E["ElevenLabs\n[Sistema externo]\nSíntesis de voz"]
+  U -->|"Opera la interfaz"| UI
+  A -->|"Solicita inferencia [HTTPS JSON]"| N
+  A -->|"Evalúa atención seleccionada [HTTPS / AI SDK]"| V
+  A -->|"Busca fuentes [HTTPS JSON]"| T
+  A -->|"Solicita audio [HTTPS; MP3]"| E
+  KEY["LEYENDA\nAzul: aplicación propia · cilindro: almacén · gris: sistema externo\nÁmbar: bloqueo operativo · marco: límite de sistema, no servidor\nFlecha: dependencia con protocolo; SSE: eventos enviados por servidor"]
+  classDef own fill:#dcecff,stroke:#175a9e,color:#122b48
+  classDef external fill:#edf0f3,stroke:#65758a,color:#172435
+  classDef blocked fill:#fff0d5,stroke:#956115,color:#573909
+  classDef legend fill:#fff,stroke:#b8c5d3,color:#394a5f
+  class UI,A,J,K own
+  class N,T,E external
+  class V blocked
+  class KEY legend
+```
+
+El código separa `runtime/simulation` de `runtime/live`. Los archivos de conocimiento llegan con el checkout revisado del repositorio. La implementación de esta rama conserva el robot simulado; en modo real el puerto robot se declara desconectado.
+
+### 2B · Contenedores del laboratorio
+
+**Alcance:** sistema laboratorio de voz. **Audiencia:** desarrollo y operación. Se representan dependencias entre procesos; los intercambios de audio y su secuencia se amplían en componentes y en la vista de flujo de código.
+
+```mermaid
+---
+title: C2 — Contenedores del laboratorio de voz Organima
+config:
+  layout: elk
+---
+flowchart LR
+  U["Operador de pruebas\n[Persona]\nHabla y compara agentes"]
+  subgraph LAB["Sistema software: laboratorio de voz"]
+    W["Web A/B\n[Contenedor · JavaScript / Web Audio]\nCaptura, conversación y medición"]
+    L["Gateway local de voz\n[Contenedor · Node.js / Express / ws]\nSesiones, turnos y síntesis"]
+    P["Puente ASR\n[Contenedor · Python / cliente Riva]\nReconocimiento de voz en streaming"]
+    W -->|"Solicita token, respuesta y audio [HTTP JSON / PCM]"| L
+    W -->|"Envía audio y recibe transcripciones [WebSocket]"| L
+    L -->|"Inicia puente y usa audio / transcripciones [stdin / stdout]"| P
+  end
+  E["ElevenLabs Agents\n[Sistema externo]\nAgente completo: Scribe, Gemini, Eleven Flash"]
+  S["NVIDIA Speech\n[Sistema externo]\nRiva ASR y Magpie TTS"]
+  N["Nebius Token Factory\n[Sistema externo]\nRespuesta NVIDIA normal o escalada"]
+  V["Vercel AI Gateway / Jev\n[Sistema externo · cuenta bloqueada]\nAtención de cada turno"]
+  T["Tavily\n[Sistema externo]\nFuentes web bajo demanda"]
+  U -->|"Opera la comparación"| W
+  W -->|"Mantiene conversación [WebRTC / SDK ElevenLabs]"| E
+  L -->|"Obtiene token efímero [HTTPS]"| E
+  P -->|"Solicita transcripción [gRPC TLS; PCM 16 kHz]"| S
+  L -->|"Solicita síntesis [HTTPS; PCM 22.05 kHz]"| S
+  L -->|"Genera respuesta textual [HTTPS JSON]"| N
+  L -->|"Evalúa estado [HTTPS / AI SDK]"| V
+  L -->|"Investiga si es necesario [HTTPS JSON]"| T
+  KEY["LEYENDA\nAzul: contenedor propio · gris: sistema externo · ámbar: bloqueo\nMarco: límite del sistema · flecha: dependencia dirigida, no secuencia\nASR: reconocimiento · TTS: síntesis · PCM: muestras de audio"]
+  classDef own fill:#dcecff,stroke:#175a9e,color:#122b48
+  classDef external fill:#edf0f3,stroke:#65758a,color:#172435
+  classDef blocked fill:#fff0d5,stroke:#956115,color:#573909
+  classDef legend fill:#fff,stroke:#b8c5d3,color:#394a5f
+  class W,L,P own
+  class E,S,N,T external
+  class V blocked
+  class KEY legend
+```
+
+ElevenLabs no usa Nebius para su conversación. NVIDIA sigue la cadena Riva → Jev seleccionado → NVIDIA en Nebius → Magpie. El historial de esa prueba vive en el navegador; el grafo entregado al cerebro está vacío y no se escribe en el journal del núcleo. Puertos, TLS de entrada y supervisión de procesos son decisiones de despliegue, no contenedores adicionales de negocio.
 
 ## Nivel 3 · Componentes
 
@@ -175,6 +246,7 @@ Reglas y salida JSON validada"]
     COG["Cognición · cognition.ts
 decide / reply / research / observe
 Fuentes, límites y estados de proveedores"]
+    AT["Atención · attention.ts\nAI SDK evaluate + gateway.evaluation\nTres probabilidades y umbral 0.7"]
     MEM["Memoria · memory.ts
 JsonlMemory: escritor único, replay, grafo y contextos"]
     ROB["Célula robot · robot.ts
@@ -187,6 +259,7 @@ Estado y eventos SSE hacia clientes"]
   end
   JOURNAL[("events.jsonl")]
   EXT["Nebius / Tavily"]
+  JV["Vercel AI Gateway · Jev"]
   EL["ElevenLabs TTS"]
   WEB -->|"REST JSON"| ROUTE
   BOOT -->|"Inyecta dependencias"| ROUTE
@@ -196,6 +269,8 @@ Estado y eventos SSE hacia clientes"]
   ROUTE -->|"plan con snapshot"| MASTER
   MASTER -->|"Inferencia de intención en live"| EXT
   ROUTE -->|"Conversar, investigar u observar"| COG
+  COG -->|"decide en selección jev"| AT
+  AT -->|"HTTPS: evaluación tipada"| JV
   COG -->|"Adaptadores HTTPS"| EXT
   ROUTE -->|"append / snapshot / context / query"| MEM
   MEM -->|"Escribe durable antes de proyectar"| JOURNAL
@@ -247,7 +322,7 @@ Proxy PCM con streaming y cancelación"]
   PY["Puente Python
 StreamingRecognize de NVIDIA"]
   EL["ElevenLabs Agents"]
-  NE["Nebius + Tavily opcional"]
+  NE["Jev vía Vercel + NVIDIA en Nebius\nTavily opcional"]
   MA["Magpie TTS"]
   UI -->|"Inicia y cierra recursos"| MIC
   MIC -->|"Energía de audio"| VAD
@@ -328,6 +403,17 @@ classDiagram
     +contexts Map
     +version number
   }
+  class AttentionDecision {
+    +notify boolean
+    +research boolean
+    +escalate boolean
+    +provider jev_or_nvidia_or_rules
+    +probability number
+    +probabilities optional_per_question
+    +threshold optional_number
+    +researchOverride optional_reason
+    +mode
+  }
   class CognitionPort {
     <<interface>>
     statuses() ProviderStatus[]
@@ -376,6 +462,7 @@ classDiagram
   MemoryState o-- Relation
   GraphSnapshot o-- OrganimaEvent
   GraphSnapshot o-- Relation
+  CognitionPort ..> AttentionDecision : devuelve evaluación
   CognitionPort ..> GraphSnapshot : consulta
   CognitionPort ..> Relation : produce observaciones
   RobotPort ..> Goal : recibe
@@ -426,6 +513,7 @@ PCM16LE → AudioBuffer → programación de fragmentos"]
   CLIENT -->|"Texto al cerrar turno"| TURN
   TURN --> HIST
   HIST --> COG
+  COG --> JEV
   COG -->|"Texto completo"| CLIENT
   CLIENT -->|"Texto a sintetizar"| TTS
   TTS --> REQ
@@ -512,11 +600,13 @@ Las escrituras del núcleo requieren `X-Organima-Token` cuando se configura; los
 ## Decisiones abiertas que el mapa hace visibles
 
 1. **Integración de voz:** elegir proveedor y conectar su conversación al maestro y a las tres memorias mediante contratos explícitos. Hoy el laboratorio no registra recuerdos del núcleo ni llama a sus acciones.
-2. **Latencia NVIDIA:** actualmente hay detección de turno, ASR, atención, posible Tavily, generación completa y TTS. Para optimizar habrá que medir cada tramo y evaluar salida incremental del cerebro; cambiar sólo la voz no elimina los demás pasos.
+2. **Latencia NVIDIA:** actualmente hay detección de turno, ASR, evaluación Jev, posible Tavily, generación completa y TTS. Para optimizar habrá que medir cada tramo y evaluar salida incremental del cerebro; cambiar sólo la voz no elimina los demás pasos.
 3. **Memoria estable:** falta el flujo de propuesta, revisión y publicación de consolidaciones. GitHub ya versiona archivos, pero no funciona como una memoria autónoma que se escribe sola.
 4. **Percepción NVIDIA:** la visión sigue en MiniCPM. NVIDIA sí está presente en razonamiento y conversación; migrar visión requiere verificar un modelo disponible y su calidad.
 5. **Hardware:** conectar y validar el adaptador físico con la otra conversación; conservar límites, caducidad y prioridad de seguridad local.
 6. **Operación pública:** integrar y desplegar la rama después de revisión. El PR del laboratorio sigue separado; la revisión de Opus quedó bloqueada por autenticación en el trabajo previo.
+
+Jev interpreta el estado acotado de la memoria, sin escribir directamente en ella. Sus decisiones se conservan en los eventos de atención y conversación. `probabilities` contiene las tres probabilidades; `probability` es su máximo por compatibilidad, no una confianza conjunta ni una medida calibrada. La selección `nvidia` conserva el modo anterior; no se activa automáticamente cuando falla Jev. En `simulation` sólo se usan reglas.
 
 DeepSeek constructor y Opus juez pertenecen al **proceso de construcción**, no al runtime del producto. No hay un Prime Agent ejecutándose como maestro: el maestro actual es `createMaster` y sus contratos acotados.
 
@@ -524,9 +614,14 @@ DeepSeek constructor y Opus juez pertenecen al **proceso de construcción**, no 
 
 - [Composición del núcleo](../src/server.ts) y [orquestación HTTP/SSE](../src/app.ts).
 - [Contratos](../src/contracts.ts), [maestro](../src/master.ts), [cognición y proveedores](../src/cognition.ts).
+- [Evaluador Jev](../src/attention.ts) y [guía Jev](JEV.md).
 - [Memoria y journal](../src/memory.ts), [robot](../src/robot.ts), [voz del núcleo](../src/voice.ts).
 - [Arranque del laboratorio](../src/voice-lab-server.ts), [turnos y TTS](../src/voice-lab.ts), [sesiones y ASR](../src/voice-agents.ts).
 - [Cliente conversacional](../scripts/voice-agents-client.js), [captura](../public/voice-capture-worklet.js), [puente Python](../scripts/nvidia-asr-bridge.py).
 - [Guía de prueba conversacional](VOICE-AGENTS.md) y [contrato propuesto del robot](ROBOT-CONTRACT.md).
 
 Las vistas C4 se expresan con Mermaid para poder revisarlas en GitHub. Los diagramas de secuencia y estados son vistas complementarias; no reemplazan el nivel de código.
+
+## Auditoría C4
+
+La revisión y las decisiones de notación están documentadas en [C4-AUDIT.md](C4-AUDIT.md). Referencias oficiales: [contexto](https://c4model.com/diagrams/system-context), [contenedores](https://c4model.com/diagrams/container), [paisaje de sistemas](https://c4model.com/diagrams/system-landscape), [notación](https://c4model.com/diagrams/notation) y [lista de revisión](https://c4model.com/diagrams/checklist).

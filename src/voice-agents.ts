@@ -18,6 +18,7 @@ export function createVoiceAgents(
   const bridge = resolve("scripts/nvidia-asr-bridge.py");
   router.get("/agents/status", (_req, res) =>
     res.json({
+      attentionProvider: env.ORGANIMA_ATTENTION_PROVIDER || "nvidia",
       elevenlabs: !!env.ELEVENLABS_API_KEY,
       nvidia:
         !!env.NVIDIA_API_KEY &&

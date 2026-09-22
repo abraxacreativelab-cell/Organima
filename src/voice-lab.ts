@@ -108,6 +108,7 @@ export interface VoiceLabTurnResult {
   mode: ChatReply['mode'];
   brainMs: number;
   sources: ChatReply['sources'];
+  decision: ChatReply['decision'];
 }
 
 /** Opciones de construcción: todo lo externo es inyectable (pruebas offline). */
@@ -499,6 +500,7 @@ export function createVoiceLab(options: VoiceLabOptions = {}): VoiceLab {
       mode: reply.mode,
       brainMs: Math.round(performance.now() - startedAt),
       sources: reply.sources,
+      decision: reply.decision,
     };
     res.json(result);
   });

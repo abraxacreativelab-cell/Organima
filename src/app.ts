@@ -124,7 +124,7 @@ export function createApp(options: AppOptions) {
  app.use((err:unknown,_req:express.Request,res:express.Response,_next:express.NextFunction)=>{
   if(err instanceof z.ZodError){res.status(400).json({error:'La solicitud no cumple el contrato.',fields:err.issues.map(i=>i.path.join('.'))});return;}
   if(err instanceof SyntaxError){res.status(400).json({error:'JSON inválido.'});return;}
-  res.status(503).json({error:'La operación no pudo completarse. Revisa disponibilidad y configuración del proveedor.',detail:err instanceof Error?err.message.replace(/Bearer\s+\S+|(?:sk-|tvly-)[A-Za-z0-9_-]+/g,'[redacted]').slice(0,250):'Error interno'});
+  res.status(503).json({error:'La operación no pudo completarse. Revisa disponibilidad y configuración del proveedor.',detail:err instanceof Error?err.message.replace(/Bearer\s+\S+|(?:sk-|tvly-|vck_)[A-Za-z0-9_-]+/g,'[redacted]').slice(0,250):'Error interno'});
  });
  let ticking=false;
  const tick=async()=>{if(ticking)return;ticking=true;try{const before=robot.status()?.state;const result=robot.tick();if(result?.state!==before)await event('goal.progress','robot',{status:result});}finally{ticking=false;}};

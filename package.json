@@ -17,7 +17,9 @@
     "voice:lab": "tsx src/voice-lab-server.ts"
   },
   "dependencies": {
+    "@ai-sdk/gateway": "4.0.89",
     "@elevenlabs/client": "^1.25.0",
+    "ai": "7.0.111",
     "dotenv": "^16.6.0",
     "express": "^5.1.0",
     "ws": "^8.21.3",

@@ -46,7 +46,7 @@ const MALE_VOICE_HINTS =
 
 const SECRET_PATTERNS = [
   /(bearer\s+)[A-Za-z0-9._~+/-]{8,}/gi,
-  /\b(?:sk|pk|tvly|nvapi|xoxb|ghp|gho|ghu|glpat)[-_][A-Za-z0-9._-]{6,}\b/gi,
+  /\b(?:sk|pk|tvly|nvapi|vck|xoxb|ghp|gho|ghu|glpat)[-_][A-Za-z0-9._-]{6,}\b/gi,
   /\beyJ[A-Za-z0-9._-]{10,}\.[A-Za-z0-9._-]{6,}\.[A-Za-z0-9._-]{6,}\b/g
 ];
 
@@ -285,6 +285,14 @@ export function normalizeChatReply(raw) {
       research: decision.research === true,
       escalate: decision.escalate === true,
       probability: Number.isFinite(probability) ? Math.min(1, Math.max(0, probability)) : 0,
+      ...(decision.probabilities && ['notify', 'research', 'escalate'].every(key =>
+        typeof decision.probabilities[key] === 'number' && Number.isFinite(decision.probabilities[key]) &&
+        decision.probabilities[key] >= 0 && decision.probabilities[key] <= 1)
+        ? { probabilities: { ...decision.probabilities } } : {}),
+      ...(typeof decision.threshold === 'number' && decision.threshold >= 0 && decision.threshold <= 1
+        ? { threshold: decision.threshold } : {}),
+      ...(decision.researchOverride === 'explicit-web-request'
+        ? { researchOverride: decision.researchOverride } : {}),
       provider: typeof decision.provider === 'string' ? decision.provider : 'rules',
       mode: normalizeMode(decision.mode) || 'simulation'
     },
@@ -1047,7 +1055,9 @@ function initApp() {
           'meta',
           `Atención: avisar ${decision.notify ? 'sí' : 'no'} · investigar ${decision.research ? 'sí' : 'no'} · escalar ${
             decision.escalate ? 'sí' : 'no'
-          } · p=${decision.probability.toFixed(2)} (${decision.provider}, ${formatModeLabel(decision.mode)})`
+          } · ${decision.probabilities
+            ? `P(avisar)=${decision.probabilities.notify.toFixed(2)}, P(investigar)=${decision.probabilities.research.toFixed(2)}, P(escalar)=${decision.probabilities.escalate.toFixed(2)} · umbral=${decision.threshold ?? 0.7}`
+            : `p=${decision.probability.toFixed(2)}`} (${decision.provider}, ${formatModeLabel(decision.mode)})${decision.researchOverride ? ' · web solicitada por el operador' : ''}`
         )
       );
     }
