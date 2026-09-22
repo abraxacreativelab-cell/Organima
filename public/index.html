@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Organima — panel de la base digital: memoria por célula, grafo compartido, conocimiento estable y evidencia.">
+  <title>Organima — Panel del organismo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido principal</a>
+
+  <header class="topbar">
+    <div class="brand">
+      <p class="brand__eyebrow">Base digital · laboratorio nocturno</p>
+      <h1 class="brand__name">Organima</h1>
+      <p class="brand__sub">Memoria, células y evidencia</p>
+    </div>
+
+    <div class="topbar__state">
+      <span id="mode-badge" class="badge badge--unknown">ESTADO DESCONOCIDO</span>
+      <span id="connection-status" class="conn" role="status" aria-live="polite">Sin conexión</span>
+      <button id="stop-button" type="button" class="btn btn--stop" title="Solicitar parada">■ Detener</button>
+    </div>
+
+    <form id="token-form" class="token" autocomplete="off">
+      <label class="token__label" for="token-input">Token de operador</label>
+      <div class="token__row">
+        <input id="token-input" name="token" type="password" autocomplete="current-password"
+               placeholder="opcional" aria-describedby="token-note">
+        <button id="token-save" type="submit" class="btn btn--ghost">Guardar</button>
+        <button id="token-clear" type="button" class="btn btn--ghost">Borrar</button>
+      </div>
+      <p id="token-note" class="hint">
+        Acceso para controlar esta demostración. Se conserva sólo en esta pestaña.
+      </p>
+    </form>
+  </header>
+
+  <main id="contenido" class="layout">
+    <section id="organismo-panel" class="panel panel--organismo" aria-labelledby="organismo-title">
+      <h2 id="organismo-title" class="panel__title">Organismo</h2>
+
+      <h3 class="block__title">Tres memorias</h3>
+      <ul id="memories" class="memories" aria-label="Tres memorias del organismo"></ul>
+
+      <h3 class="block__title">Células</h3>
+      <ul id="cells" class="cells"></ul>
+
+      <h3 class="block__title">Salud de proveedores</h3>
+      <ul id="providers" class="providers"></ul>
+      <p id="providers-note" class="hint">
+        «Sin probar» nunca significa conectado: sólo una prueba real del servidor marca «Listo».
+      </p>
+    </section>
+
+    <section id="scene-panel" class="panel panel--scene" aria-labelledby="scene-title">
+      <div class="panel__head">
+        <h2 id="scene-title" class="panel__title">Escena espacial</h2>
+        <span id="scene-meta" class="meta">grafo v0 · 0 relaciones · 0 eventos</span>
+      </div>
+      <div id="scene" class="scene" role="img"
+           aria-label="Escena espacial de células, objetos y relaciones del grafo compartido"></div>
+      <p id="scene-caption" class="hint">
+        Dibujo derivado del grafo compartido. Las flechas son relaciones con su predicado y confianza.
+      </p>
+    </section>
+
+    <section id="chat-panel" class="panel panel--chat" aria-labelledby="chat-title">
+      <div class="panel__head">
+        <h2 id="chat-title" class="panel__title">Conversación</h2>
+        <span id="chat-status" class="meta" role="status" aria-live="polite">Listo</span>
+      </div>
+      <ol id="chat-log" class="chat" aria-label="Historial de conversación" aria-live="polite"></ol>
+      <p id="chat-empty" class="empty">
+        Todavía no hay conversación. Escribe un mensaje y pulsa Enter para empezar; el dictado del
+        navegador aparece sólo si ese servicio existe aquí.
+      </p>
+      <form id="chat-form" class="composer" autocomplete="off">
+        <label class="sr" for="chat-input">Mensaje para Organima</label>
+        <textarea id="chat-input" name="message" rows="2" placeholder="Escribe y pulsa Enter…"
+                  required aria-describedby="chat-hint"></textarea>
+        <button id="chat-send" type="submit" class="btn btn--primary">Enviar</button>
+      </form>
+      <p id="chat-hint" class="hint">
+        Enter envía; Shift+Enter hace salto de línea. NVIDIA genera el texto: la síntesis de voz es
+        una capa aparte de este panel.
+      </p>
+      <div id="chat-evidence" class="evidence" aria-live="polite"></div>
+    </section>
+
+    <section id="instrumentos-panel" class="panel panel--instrumentos" aria-labelledby="instrumentos-title">
+      <h2 id="instrumentos-title" class="panel__title">Instrumentos</h2>
+
+      <div class="tools">
+        <div class="tool">
+          <h3 class="block__title">Investigación externa</h3>
+          <form id="research-form" class="tool__form" autocomplete="off">
+            <label class="sr" for="research-input">Consulta de investigación</label>
+            <input id="research-input" name="query" type="text" placeholder="¿Qué quieres investigar?"
+                   required>
+            <button id="research-submit" type="submit" class="btn btn--ghost">Investigar</button>
+          </form>
+          <p id="research-status" class="meta" role="status" aria-live="polite">Sin consultas</p>
+          <div id="research-results" class="evidence"></div>
+        </div>
+
+        <div class="tool">
+          <h3 class="block__title">Observación por foto</h3>
+          <form id="observe-form" class="tool__form" autocomplete="off">
+            <label class="sr" for="observe-input">Foto para observar</label>
+            <input id="observe-input" name="photo" type="file" accept="image/*">
+            <button id="observe-submit" type="submit" class="btn btn--ghost">Enviar observación</button>
+          </form>
+          <p id="observe-status" class="meta" role="status" aria-live="polite">Sin imagen</p>
+          <div id="observe-preview-wrap" class="preview" hidden>
+            <img id="observe-preview" alt="Vista previa local de la foto seleccionada">
+          </div>
+          <p id="observe-hint" class="hint">
+            Máximo 2 MB. La vista previa es local y no se abre la cámara automáticamente.
+          </p>
+        </div>
+
+        <div class="tool">
+          <h3 class="block__title">Objetivo del robot</h3>
+          <form id="goal-form" class="tool__form" autocomplete="off">
+            <label class="sr" for="goal-object">Objeto</label>
+            <select id="goal-object" name="object">
+              <option value="red_ball" selected>Pelota roja</option>
+            </select>
+            <label class="sr" for="goal-target">Destino</label>
+            <select id="goal-target" name="target">
+              <option value="paper" selected>Hoja objetivo</option>
+            </select>
+            <button id="goal-submit" type="submit" class="btn btn--ghost">Solicitar</button>
+          </form>
+          <p id="goal-hint" class="hint">
+            Único objetivo soportado en esta entrega: pelota roja sobre hoja. La simulación no es
+            hardware real.
+          </p>
+          <p id="goal-status" class="meta" role="status" aria-live="polite">Sin objetivos</p>
+        </div>
+
+        <div class="tool">
+          <h3 class="block__title">Voz y micrófono</h3>
+          <div id="voice-panel" class="tool__form">
+            <label class="switch" for="voice-toggle">
+              <input id="voice-toggle" type="checkbox">
+              <span>Leer respuestas en voz alta</span>
+            </label>
+            <button id="voice-silence" type="button" class="btn btn--ghost">Silencio</button>
+            <button id="mic-button" type="button" class="btn btn--ghost" hidden>Dictar</button>
+          </div>
+          <p id="voice-name" class="meta">Voz del navegador: sin activar</p>
+          <p id="voice-warn" class="warn" hidden></p>
+          <p id="voice-note" class="hint">
+            Síntesis del navegador. NVIDIA genera texto; la voz es una capa separada y opcional.
+          </p>
+          <p id="mic-status" class="meta">Micrófono sin usar</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="cronologia-panel" class="panel panel--cronologia" aria-labelledby="cronologia-title">
+      <div class="panel__head">
+        <h2 id="cronologia-title" class="panel__title">Cronología</h2>
+        <button id="refresh-button" type="button" class="btn btn--ghost">Actualizar</button>
+      </div>
+      <ol id="timeline-list" class="timeline"></ol>
+      <p id="timeline-empty" class="empty">
+        Aún no hay eventos persistidos. Abre «Mostrar acciones de demostración» y pulsa «Reiniciar
+        escena» para llenar la cronología con pasos simulados.
+      </p>
+      <label class="switch switch--sim" for="toggle-demo">
+        <input id="toggle-demo" type="checkbox">
+        <span>Mostrar acciones de demostración</span>
+      </label>
+      <div id="demo-panel" class="demo" hidden>
+        <p class="demo__label" role="note">
+          Escenario simulado — estas acciones sólo funcionan en modo simulación y nunca son
+          evidencia de hardware real.
+        </p>
+        <div class="demo__row">
+          <button id="demo-reset" type="button" class="btn btn--ghost" data-step="reset">Reiniciar escena</button>
+          <button id="demo-move" type="button" class="btn btn--ghost" data-step="move">Mover objeto</button>
+          <button id="demo-verify" type="button" class="btn btn--ghost" data-step="verify">Verificar</button>
+        </div>
+        <p id="demo-note" class="meta">Acciones simuladas deshabilitadas hasta confirmar el modo.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>
+      Panel servido por el núcleo local. La evidencia externa es de Tavily; las inferencias no se
+      convierten en hechos observados.
+    </p>
+    <p id="app-status" class="meta" role="status" aria-live="polite">Iniciando…</p>
+  </footer>
+
+  <p id="status-region" class="sr" role="status" aria-live="polite"></p>
+  <p id="alert-region" class="sr" role="alert" aria-live="assertive"></p>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
