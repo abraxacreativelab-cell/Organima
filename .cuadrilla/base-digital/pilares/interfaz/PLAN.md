@@ -6,3 +6,6 @@ Acciones de demo sólo en simulation, con labels Escenario simulado. Botón dete
 
 ## NO TOCAR
 Sólo los archivos nombrados arriba. No editar src/contracts.ts, package*, CLAUDE.md ni expediente. No git commit/push.
+
+## Revisión y pulido obligatorio
+Corrige NOTAS-DEL-JUEZ.md, especialmente voz ausente que no debe hablar por defecto. Añade prueba ejecutable de ese comportamiento, no sólo búsqueda de texto. Remueve opciones de objetivo no soportadas (taza/estante), sólo pelota roja -> hoja. Simplifica texto visible: sustituye explicación de sessionStorage/headers/claves por «Acceso para controlar esta demostración. Se conserva sólo en esta pestaña.»; la implementación técnica va a docs/UX.md, no al recorrido del producto. Cambia título Detener de «Parada local inmediata» a «Solicitar parada» porque es una orden HTTP, no el botón físico. Añade textos vacíos que ayuden a ejecutar demo, sin afirmaciones de funcionamiento real. Mantén las pruebas de seguridad y añade test que ausencia de voz no llama speak. No tocar otros archivos.

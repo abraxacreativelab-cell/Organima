@@ -50,7 +50,7 @@ export function createApp(options: AppOptions) {
   const relation={subject:'red_ball',predicate:'ON',object:step==='reset'?'cup':step==='move'?'table':'paper',source:'vision_global',confidence:1,observedAt:new Date().toISOString()};
   if(step==='verify'&&robot.status()?.state!=='awaiting_verification'){res.status(409).json({error:'Espera a que el robot solicite verificación.'});return;}
   await event('observation','vision_global',{relations:[relation],simulated:true});
-  if(step==='verify'){robot.verify([relation],'vision_global');await event('goal.verified','organism',{status:robot.status(),simulated:true});}
+  if(step==='verify'){robot.verify([relation],'vision_global');if(robot.status()?.state!=='verified'){res.status(409).json({error:'La evidencia no verificó el objetivo.'});return;}await event('goal.verified','organism',{status:robot.status(),simulated:true});}
   res.json(state());
  });
  if(options.publicDirectory)app.use(express.static(options.publicDirectory));

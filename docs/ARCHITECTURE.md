@@ -1,7 +1,7 @@
 # Organima — arquitectura acordada y límites de esta entrega
 
 ## Resultado observable
-Una célula registra una observación, el organismo conserva sus relaciones y su historia, Jev decide atención, NVIDIA en Nebius conversa o interpreta imágenes, Tavily aporta evidencia externa vinculada a esa experiencia, y una célula robot recibe un objetivo cuyo éxito exige observación independiente. Panel web muestra cada paso y diferencia simulación de ejecución real.
+Una célula registra una observación, el organismo conserva sus relaciones y su historia, La política de atención decide prioridad, NVIDIA en Nebius conversa o interpreta imágenes, Tavily aporta evidencia externa vinculada a esa experiencia, y una célula robot recibe un objetivo cuyo éxito exige observación independiente. Panel web muestra cada paso y diferencia simulación de ejecución real.
 
 ## Decisiones 2026-09-22
 - Repo nuevo público Organima; no hereda despliegues ni datos del Garden existente.
@@ -34,3 +34,9 @@ Acceso real Nebius/Tavily/Jev; compatibilidad de cámaras; fuente de energía y 
 3. Solicitar objetivo robot; observar progreso y verificación independiente.
 4. Investigar con Tavily una pregunta relacionada; mostrar fuentes y memoria recuperable.
 5. Recordar un evento anterior. Panel revela qué memoria y qué proveedor contribuyeron.
+
+## Disponibilidad verificada de proveedores
+2026-09-22: Token Factory devolvió 200 en /v1/models y chat para Nemotron 3.5 Lightning y Nemotron 3 Super. Las llamadas necesitan chat_template_kwargs.enable_thinking=false para voz y decisiones JSON. Jev excluido explícitamente por usuario al no disponer de cuenta.
+Nemotron Nano Omni devolvió 404 en endpoint general y us-central1. Visión MVP usa openbmb/MiniCPM-V-4_5 en Nebius, probado con imagen roja y respuesta correcta. Esto conserva NVIDIA para conversación/razonamiento y Nebius para ambos; no se afirma que el modelo visual sea NVIDIA. Reemplazable por NVIDIA cuando exista endpoint operativo.
+Tavily devolvió 200 con resultados de documentación oficial. ElevenLabs enumeró una voz femenina mexicana conversacional disponible; falta validación auditiva del audio generado.
+Nebius MCP instalado en Codex con SAFE_MODE=true; perfil local organima, handshake y nebius_profiles probados. No requiere reiniciar la construcción; para herramientas nuevas en la sesión se necesita recargar conexión.
