@@ -35,3 +35,13 @@ no significan que esos defectos sigan abiertos. El arquitecto volvió a ejecutar
 No hay evidencia de motores, cámara física, micrófono o sensores de borde conectados. No se ha
 grabado el video de entrega. La demostración pública, cuando esté publicada, usa sólo simulación;
 las pruebas de inferencia real no deben confundirse con ese recorrido público.
+
+## Publicación comprobada
+
+HTTPS: https://organima.187-77-9-8.sslip.io
+Release: `85f32be504622ddc135b5be299eb82b6056577ed`.
+GitHub CI pasó pruebas, compilación y recorrido Chromium. El arquitecto ejecutó además
+el recorrido contra la URL pública en Chrome: acceso, escena, objetivo por texto, espera y
+verificación. Resultado `PUBLIC_DEMO_OK`, sin errores de página. Salud pública identifica
+`simulation` y `hardwareConnected:false`; los logs del servicio no mostraron errores.
+La revisión independiente de integración está en [INTEGRATION-REVIEW.md](INTEGRATION-REVIEW.md).

@@ -7,6 +7,8 @@ un grafo compartido; la atención decide cuándo intervenir; NVIDIA en Nebius in
 Tavily relaciona la experiencia local con evidencia externa. Un objetivo físico sólo se considera
 cumplido después de recibir una observación independiente.
 
+[Abrir demo público](https://organima.187-77-9-8.sslip.io) · Acceso de operador: **demo**.
+
 Primera entrega digital para el hackathon Nebius. **El robot físico todavía no está conectado.**
 La simulación se identifica en la interfaz y no demuestra funcionamiento de motores.
 
