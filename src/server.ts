@@ -4,6 +4,8 @@ import { readFile } from 'node:fs/promises';
 import { createApp } from './app.js';
 import { createMemory } from './memory.js';
 import { createCognition } from './cognition.js';
+import { createMaster } from './master.js';
+import { createVoice } from './voice.js';
 import { createRobot } from './robot.js';
 const mode=process.env.ORGANIMA_MODE==='live'?'live':'simulation';
 const host=process.env.HOST??'127.0.0.1';
@@ -12,7 +14,12 @@ if(!Number.isInteger(port)||port<1||port>65535)throw new Error('PORT inválido')
 if(!['127.0.0.1','localhost','::1'].includes(host)&&!process.env.ORGANIMA_OPERATOR_TOKEN)throw new Error('Servidor público requiere ORGANIMA_OPERATOR_TOKEN');
 const directory=resolve(process.env.ORGANIMA_DATA_DIR??'./runtime',mode);
 const knowledge=await readFile(resolve('knowledge/identity.md'),'utf8')+'\n'+await readFile(resolve('knowledge/objects.json'),'utf8');
-const service=createApp({mode,memory:await createMemory(directory),cognition:createCognition({mode}),robot:createRobot({mode}),operatorToken:process.env.ORGANIMA_OPERATOR_TOKEN,publicDirectory:resolve('public'),knowledge});
+const memory=await createMemory(directory);
+if(mode==='simulation'&&memory.snapshot().events.length===0){
+ const at=new Date().toISOString();
+ await memory.append({id:'demo-initial-scene',type:'observation',cellId:'vision_global',occurredAt:at,mode,payload:{simulated:true,relations:[{subject:'red_ball',predicate:'ON',object:'cup',source:'vision_global',confidence:1,observedAt:at}]}});
+}
+const service=createApp({mode,memory,cognition:createCognition({mode}),robot:createRobot({mode}),master:createMaster({mode}),voice:createVoice({env:mode==='live'?process.env:{}}),operatorToken:process.env.ORGANIMA_OPERATOR_TOKEN,publicDirectory:resolve('public'),knowledge});
 const server=service.app.listen(port,host,()=>console.log(`Organima ${mode}: http://${host}:${port}`));
 const clock=setInterval(()=>{service.tick().catch(()=>console.error('No se pudo persistir progreso del robot.'));},250);
 for(const signal of ['SIGINT','SIGTERM'] as const)process.on(signal,()=>{clearInterval(clock);service.close();server.close();});

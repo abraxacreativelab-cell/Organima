@@ -8,7 +8,7 @@ La arquitectura original adjunta queda como referencia de simplificación. Dos c
 
 No se conectan bases, datos ni despliegues del Garden actual. Las credenciales autorizadas se reutilizan localmente sin publicarlas. La información privada de los handoffs no se copia al repo público. Datos demo separados del laboratorio.
 
-Jev requerido incluso si su acceso demora. Un mock de pruebas no satisface ese requisito. NVIDIA en Nebius requerido; disponibilidad de un modelo en docs no equivale a acceso real. Personalidad de voz aceptada, sujeto a pruebas de audio real.
+Decisión inicial, sustituida por la actualización del 22/09 abajo: Jev requerido. NVIDIA en Nebius requerido; disponibilidad de un modelo en docs no equivale a acceso real. Personalidad de voz aceptada, sujeto a pruebas de audio real.
 
 Horario informado: miércoles 14:00–20:00. Fecha/hora límite de plataforma pendiente de confirmar; calendario de sesión apunta al miércoles 23 de septiembre de 2026. No asumir extensión.
 

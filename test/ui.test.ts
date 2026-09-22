@@ -199,7 +199,8 @@ describe('seguridad de los archivos del panel', () => {
   });
 
   it('app.js no importa módulos externos ni frameworks', () => {
-    assert.ok(!/^\s*import\s/m.test(app), 'no debe haber import en app.js');
+    const imports = [...app.matchAll(/^import .* from ['"]([^'"]+)['"]/gm)].map(m=>m[1]);
+    assert.deepEqual(imports, ['./vision.js'], 'sólo importa el módulo local de cámara');
     assert.ok(!app.includes('require('), 'no debe usar require');
     assert.ok(!/from ['"]https?:/.test(app), 'no debe importar URLs');
   });
@@ -350,7 +351,7 @@ describe('helpers puros: normalización de datos del servidor', () => {
       },
       cells: [{ id: 'vision', parentId: null, name: 'Visión', capabilities: ['observe'], status: 'ready', mode: 'simulation' }, {}],
       providers: [{ name: 'tavily', configured: true, state: 'ready' }, { name: '' }],
-      robot: { id: 'robot-1', name: 'Robot de laboratorio', status: 'busy', mode: 'simulation', capabilities: [] }
+      robot: { goal:{id:'g1',cellId:'robot',object:'red_ball',target:'paper',relation:'ON',deadline:'2026-09-22T01:01:00Z',mode:'simulation'},state:'running',updatedAt:'2026-09-22T01:00:00Z' }
     });
     assert.equal(state.mode, 'simulation');
     assert.equal(state.graph.version, 7);
@@ -359,8 +360,8 @@ describe('helpers puros: normalización de datos del servidor', () => {
     assert.equal(state.graph.events.length, 1);
     assert.equal(state.cells.length, 1);
     assert.equal(state.providers.length, 1);
-    assert.equal(state.robot.id, 'robot-1');
-    assert.equal(state.robot.parentId, null);
+    assert.equal(state.robot.goal.id, 'g1');
+    assert.equal(state.robot.state, 'running');
   });
 
   it('exige el modo del proveedor del catálogo y jamás marca ready por accidente', () => {
@@ -430,9 +431,9 @@ describe('helpers puros: presentación', () => {
     });
     assert.equal(memories.length, 3);
     assert.deepEqual(memories.map((memory) => memory.id), ['context', 'graph', 'knowledge']);
-    assert.match(memories[0].metric, /1 de 1/);
+    assert.match(memories[0].metric, /1 fuente con eventos/);
     assert.match(memories[1].metric, /v3/);
-    assert.match(memories[2].note, /no los falsifica/);
+    assert.match(memories[2].note, /conservados en Git/);
   });
 
   it('trata fechas inválidas sin romper la cronología', () => {

@@ -36,6 +36,7 @@ test('HTTP: auth, observations, goal verification, context and restart',async()=
   await service.tick();offset=0;await service.tick();
   const verify=await post('/api/demo/step',{step:'verify'});assert.equal(verify.status,200);assert.equal((await verify.json()).robot.state,'verified');
   const chat=await post('/api/chat',{message:'¿Dónde está?'});assert.equal(chat.status,200);assert.equal(memory.context('voice').length,2);
+  const location=await (await post('/api/chat',{message:'¿Dónde está la pelota roja?'})).json();assert.equal(location.model,'local-memory');assert.match(location.text,/la hoja/);assert.equal(location.sources.length,0);
   const state=await fetch(base+'/api/state').then(r=>r.json());assert.equal(state.mode,'simulation');assert.equal(JSON.stringify(state).includes('integration-secret'),false);
   assert.equal((await post('/api/chat',{message:''})).status,400);
   const restored=await createMemory(dir);assert.equal(restored.snapshot().relations[0].object,'paper');
@@ -46,4 +47,32 @@ test('live API never exposes simulation controls',async()=>{
  const server=service.app.listen(0,'127.0.0.1');await once(server,'listening');
  try{const res=await fetch(`http://127.0.0.1:${(server.address() as AddressInfo).port}/api/demo/step`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({step:'move'})});assert.equal(res.status,409);}
  finally{service.close();await new Promise<void>(resolve=>server.close(()=>resolve()));await rm(dir,{recursive:true,force:true});}
+});
+test('a stop cancels a cloud movement decision still in flight',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'organima-stop-race-'));
+ let resolveIntent!:(value:any)=>void;let started!:()=>void;
+ const entered=new Promise<void>(r=>{started=r;});
+ const master={plan:async()=>{started();return await new Promise<any>(r=>{resolveIntent=r;});}};
+ const robot=createRobot({mode:'simulation'});
+ const service=createApp({mode:'simulation',memory:await createMemory(dir),cognition,robot,master});
+ const server=service.app.listen(0,'127.0.0.1');await once(server,'listening');
+ const base=`http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+ const post=(path:string,body:unknown)=>fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+ try{
+  const pending=post('/api/chat',{message:'Mueve la pelota roja a la hoja'});await entered;
+  assert.equal((await post('/api/chat',{message:'alto'})).status,200);
+  resolveIntent({action:'move',object:'red_ball',target:'paper',reason:'test'});
+  assert.equal((await pending).status,409);assert.equal(robot.status(),null);
+ }finally{service.close();await new Promise<void>(r=>server.close(()=>r()));await rm(dir,{recursive:true,force:true});}
+});
+test('voice route protects synthesis and returns audio bytes',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'organima-voice-api-'));let calls=0;
+ const service=createApp({mode:'simulation',memory:await createMemory(dir),cognition,robot:createRobot({mode:'simulation'}),operatorToken:'test',voice:{status:()=>({configured:true,state:'untested',provider:'elevenlabs',language:'es'}),synthesize:async()=>{calls++;return new Uint8Array([73,68,51]);}}});
+ const server=service.app.listen(0,'127.0.0.1');await once(server,'listening');
+ const base=`http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+ try{
+  assert.equal((await fetch(base+'/api/voice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:'hola'})})).status,401);assert.equal(calls,0);
+  const res=await fetch(base+'/api/voice',{method:'POST',headers:{'Content-Type':'application/json','X-Organima-Token':'test'},body:JSON.stringify({text:'hola'})});
+  assert.equal(res.status,200);assert.match(res.headers.get('content-type')!,/audio/);assert.equal((await res.arrayBuffer()).byteLength,3);assert.equal(calls,1);
+ }finally{service.close();await new Promise<void>(r=>server.close(()=>r()));await rm(dir,{recursive:true,force:true});}
 });

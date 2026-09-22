@@ -1,3 +1,4 @@
+import { startCameraMonitor } from './vision.js';
 /**
  * Organima — interfaz del panel.
  *
@@ -265,7 +266,7 @@ export function normalizeState(raw) {
     },
     cells: Array.isArray(source.cells) ? source.cells.map(normalizeCell).filter(Boolean) : [],
     providers: Array.isArray(source.providers) ? source.providers.map(normalizeProvider).filter(Boolean) : [],
-    robot: normalizeCell(source.robot)
+    robot: normalizeGoalStatus(source.robot)
   };
 }
 
@@ -284,7 +285,7 @@ export function normalizeChatReply(raw) {
       research: decision.research === true,
       escalate: decision.escalate === true,
       probability: Number.isFinite(probability) ? Math.min(1, Math.max(0, probability)) : 0,
-      provider: typeof decision.provider === 'string' ? decision.provider : 'jev',
+      provider: typeof decision.provider === 'string' ? decision.provider : 'rules',
       mode: normalizeMode(decision.mode) || 'simulation'
     },
     model: typeof raw.model === 'string' ? raw.model : ''
@@ -341,8 +342,8 @@ export function memorySummary(raw) {
     {
       id: 'context',
       name: 'Contexto por célula',
-      metric: `${withContext} de ${state.cells.length} células con contexto`,
-      note: withContext === 0 ? 'Aún sin eventos por célula.' : `${withContext} células con historia propia.`
+      metric: `${withContext} ${withContext===1?'fuente':'fuentes'} con eventos`,
+      note: withContext === 0 ? 'Aún sin eventos por célula.' : `Historial reciente por célula; no mide el tamaño del contexto.`
     },
     {
       id: 'graph',
@@ -357,7 +358,7 @@ export function memorySummary(raw) {
       id: 'knowledge',
       name: 'Conocimiento estable',
       metric: 'Versionado en knowledge/',
-      note: 'La API de estado no expone estos archivos; el panel no los falsifica.'
+      note: 'Identidad y objetos del laboratorio, conservados en Git.'
     }
   ];
 }
@@ -926,13 +927,8 @@ function initApp() {
       top.appendChild(makeElement('span', 'provider__name', provider.name));
       top.appendChild(makeChip(health.label, health.tone));
       item.appendChild(top);
-      const details = [
-        provider.model ? `modelo ${provider.model}` : 'sin modelo declarado',
-        provider.configured ? 'credencial presente en el servidor' : 'sin credencial en el servidor',
-        health.hint
-      ];
-      item.appendChild(makeElement('p', 'provider__detail', details.join(' · ')));
-      if (provider.detail) item.appendChild(makeElement('p', 'provider__detail', truncate(provider.detail, 180)));
+      if(provider.model)item.appendChild(makeElement('p','provider__detail',provider.model));
+      item.title = provider.detail || health.hint;
       host.appendChild(item);
     }
   }
@@ -991,6 +987,8 @@ function initApp() {
 
   function renderAll() {
     renderMode();
+    const goal=ui.state.robot;
+    if(goal)setText(dom.goalStatus, `${goal.goal.object} → ${goal.goal.target} · ${goal.state} · ${formatModeLabel(goal.goal.mode)}${goal.reason?' · '+goal.reason:''}`);
     renderMemories();
     renderCells();
     renderProviders();
@@ -1047,7 +1045,7 @@ function initApp() {
         makeElement(
           'p',
           'meta',
-          `Atención Jev: avisar ${decision.notify ? 'sí' : 'no'} · investigar ${decision.research ? 'sí' : 'no'} · escalar ${
+          `Atención: avisar ${decision.notify ? 'sí' : 'no'} · investigar ${decision.research ? 'sí' : 'no'} · escalar ${
             decision.escalate ? 'sí' : 'no'
           } · p=${decision.probability.toFixed(2)} (${decision.provider}, ${formatModeLabel(decision.mode)})`
         )
@@ -1245,6 +1243,7 @@ function initApp() {
    * la orden se reenvía. La seguridad no depende de un botón bloqueado.
    */
   async function requestStop() {
+    stopSpeaking();
     setText(dom.chatStatus, 'Parada solicitada…');
     try {
       const payload = await requestJson(API_ROUTES.stop, { method: 'POST', body: {}, token: ui.token });
@@ -1303,7 +1302,18 @@ function initApp() {
     }
   }
 
+  let remoteVoice = false;
+  let voiceController = null;
+  let audioPlayer = null;
+  let audioUrl = null;
+
   function refreshVoices() {
+    if (remoteVoice) {
+      dom.voiceToggle.disabled = false;
+      setText(dom.voiceName, "Ana Sofia · español mexicano · ElevenLabs");
+      dom.voiceWarn.hidden = true;
+      return;
+    }
     if (!synthesisAvailable()) {
       disableVoiceControls('Este navegador no ofrece síntesis de voz.');
       return;
@@ -1325,7 +1335,22 @@ function initApp() {
     }
   }
 
-  function speak(text) {
+  async function speak(text) {
+    if (remoteVoice && ui.voiceEnabled) {
+      stopSpeaking();
+      const controller = new AbortController(); voiceController = controller;
+      try {
+        const response = await fetch('/api/voice', { method:'POST', headers:{'Content-Type':'application/json','X-Organima-Token':ui.token}, body:JSON.stringify({text:String(text).slice(0,1600)}), signal:controller.signal });
+        if (!response.ok) throw new Error('No se pudo generar la voz.');
+        const blob = await response.blob();
+        if (controller.signal.aborted) return;
+        audioUrl = URL.createObjectURL(blob); audioPlayer = new Audio(audioUrl);
+        audioPlayer.onended = () => { if (audioUrl) URL.revokeObjectURL(audioUrl); audioUrl=null; };
+        await audioPlayer.play();
+        setText(dom.voiceName, 'Ana Sofia · español mexicano · ElevenLabs');
+      } catch(error) { if (!controller.signal.aborted) setText(dom.voiceName, error.message); }
+      return;
+    }
     if (!synthesisAvailable()) return { spoken: false, reason: 'synthesis-unavailable' };
     return speakWithVoice(
       {
@@ -1344,12 +1369,16 @@ function initApp() {
   }
 
   function stopSpeaking() {
+    voiceController?.abort(); voiceController=null;
+    if (audioPlayer) { audioPlayer.pause(); audioPlayer=null; }
+    if (audioUrl) { URL.revokeObjectURL(audioUrl); audioUrl=null; }
     if (synthesisAvailable()) window.speechSynthesis.cancel();
     setText(dom.voiceName, ui.voiceEnabled ? 'Lectura interrumpida; lista para la siguiente.' : 'Voz del navegador: sin activar');
   }
 
   function toggleVoice(enabled) {
     if (!enabled) {
+      stopSpeaking();
       ui.voiceEnabled = false;
       if (synthesisAvailable()) window.speechSynthesis.cancel();
       setText(dom.voiceName, 'Voz del navegador: sin activar');
@@ -1360,6 +1389,27 @@ function initApp() {
     // refreshVoices() vuelve a apagar la lectura si no hay ninguna voz que usar.
     refreshVoices();
   }
+
+  fetch('/api/voice').then(r=>r.json()).then(status=>{ remoteVoice=status.configured===true; refreshVoices(); }).catch(()=>{});
+  let cameraMonitor = null;
+  let cameraStarting = false;
+  document.getElementById('camera-start')?.addEventListener('click', async()=>{
+    if (ui.state.mode !== 'live') { setText(document.getElementById('camera-status'), 'La cámara requiere modo live. En esta demo usa los pasos simulados.'); return; }
+    if (cameraStarting) return;
+    cameraStarting=true;
+    const video=document.getElementById('camera-preview');
+    try {
+      cameraMonitor?.stop(); video.hidden=false;
+      cameraMonitor=await startCameraMonitor({video,onStatus:message=>setText(document.getElementById('camera-status'),message),onFrame:async imageDataUrl=>{
+        const payload=await requestJson(API_ROUTES.observe,{method:'POST',body:{imageDataUrl},token:ui.token,timeout:60000});
+        if(payload.announcement){appendMessage({role:'agent',text:payload.announcement.text,mode:ui.state.mode,model:payload.announcement.model});if(ui.voiceEnabled)speak(payload.announcement.text);}
+        await loadState({silent:true});
+      }});
+    }catch(error){setText(document.getElementById('camera-status'),error.message);}
+    finally{cameraStarting=false;}
+  });
+  document.getElementById('camera-stop')?.addEventListener('click',()=>{cameraMonitor?.stop();cameraMonitor=null;});
+  window.addEventListener('pagehide',()=>{cameraMonitor?.stop();stopSpeaking();});
 
   /* ── Micrófono ── */
 
@@ -1402,6 +1452,7 @@ function initApp() {
         return;
       }
       try {
+        stopSpeaking();
         recognition.start();
         listening = true;
         dom.micButton.textContent = 'Detener dictado';

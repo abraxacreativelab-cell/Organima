@@ -1,0 +1,36 @@
+import {chromium} from '@playwright/test';
+import assert from 'node:assert/strict';
+import {mkdtemp,rm,mkdir} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join,resolve} from 'node:path';
+import {once} from 'node:events';
+import {createApp} from '../src/app.js';
+import {createMemory} from '../src/memory.js';
+import {createCognition} from '../src/cognition.js';
+import {createRobot} from '../src/robot.js';
+import {createMaster} from '../src/master.js';
+const directory=await mkdtemp(join(tmpdir(),'organima-browser-'));
+const service=createApp({mode:'simulation',memory:await createMemory(directory),cognition:createCognition({mode:'simulation'}),robot:createRobot({mode:'simulation'}),master:createMaster({mode:'simulation'}),operatorToken:'demo',publicDirectory:resolve('public')});
+const server=service.app.listen(0,'127.0.0.1');await once(server,'listening');
+const timer=setInterval(()=>void service.tick(),100);
+const browser=await chromium.launch({channel:process.env.CI?'chromium':'chrome',headless:true});
+const errors:string[]=[];
+try{
+ const page=await browser.newPage({viewport:{width:1440,height:1000}});page.on('pageerror',e=>errors.push(e.message));
+ const address=server.address();assert(address&&typeof address==='object');
+ await page.goto(`http://127.0.0.1:${address.port}`);
+ await page.locator('#token-input').fill('demo');await page.locator('#token-save').click();
+ await page.locator('#toggle-demo').check();await page.locator('#demo-reset').click();
+ await page.waitForFunction(()=>document.querySelector('#scene')?.textContent?.includes('ON'));
+ await page.locator('#chat-input').fill('Mueve la pelota roja hacia la hoja');await page.locator('#chat-send').click();
+ await page.waitForFunction(()=>document.querySelector('#chat-log')?.textContent?.includes('Objetivo aceptado'));
+ await page.waitForFunction(()=>document.querySelector('#goal-status')?.textContent?.includes('awaiting_verification'),{},{timeout:12000});
+ await page.locator('#demo-verify').click();
+ await page.waitForFunction(()=>document.querySelector('#goal-status')?.textContent?.includes('verified'));
+ await page.locator('#camera-start').click();assert.match(await page.locator('#camera-status').innerText(),/modo live/);
+ await mkdir('runtime',{recursive:true});await page.screenshot({path:'runtime/desktop.png',fullPage:true});
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+ await page.setViewportSize({width:390,height:844});await page.screenshot({path:'runtime/mobile.png',fullPage:true});
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+ assert.deepEqual(errors,[]);console.log('BROWSER_OK: authenticated simulation, text goal, independent verification, mobile layout, no page errors');
+}finally{await browser.close();clearInterval(timer);service.close();await new Promise<void>(r=>server.close(()=>r()));await rm(directory,{recursive:true,force:true});}

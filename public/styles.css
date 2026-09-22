@@ -808,3 +808,8 @@ input[type="file"] { padding: 0.35rem; }
     --line: #46596a;
   }
 }
+
+@media (min-width: 1100px) {
+ .panel--organismo { max-height: 660px; overflow-y: auto; }
+ .panel--scene, .panel--chat { min-height: 520px; }
+}

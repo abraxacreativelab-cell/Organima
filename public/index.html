@@ -13,9 +13,9 @@
 
   <header class="topbar">
     <div class="brand">
-      <p class="brand__eyebrow">Base digital · laboratorio nocturno</p>
+      <p class="brand__eyebrow">ABRAXA · Physical AI</p>
       <h1 class="brand__name">Organima</h1>
-      <p class="brand__sub">Memoria, células y evidencia</p>
+      <p class="brand__sub">Un organismo. Muchas inteligencias. Una memoria.</p>
     </div>
 
     <div class="topbar__state">
@@ -25,7 +25,7 @@
     </div>
 
     <form id="token-form" class="token" autocomplete="off">
-      <label class="token__label" for="token-input">Token de operador</label>
+      <label class="token__label" for="token-input">Acceso de operador</label>
       <div class="token__row">
         <input id="token-input" name="token" type="password" autocomplete="current-password"
                placeholder="opcional" aria-describedby="token-note">
@@ -34,6 +34,7 @@
       </div>
       <p id="token-note" class="hint">
         Acceso para controlar esta demostración. Se conserva sólo en esta pestaña.
+        En el demo público simulado, escribe <strong>demo</strong>.
       </p>
     </form>
   </header>
@@ -107,7 +108,10 @@
         </div>
 
         <div class="tool">
-          <h3 class="block__title">Observación por foto</h3>
+          <h3 class="block__title">Visión del organismo</h3>
+          <div class="tool__form"><button id="camera-start" class="btn btn--ghost" type="button">Activar cámara</button><button id="camera-stop" class="btn btn--ghost" type="button">Apagar cámara</button></div>
+          <video id="camera-preview" hidden muted playsinline style="width:100%;max-height:200px;border-radius:12px"></video>
+          <p id="camera-status" class="meta" role="status">Cámara apagada · sólo se envían cambios de escena</p>
           <form id="observe-form" class="tool__form" autocomplete="off">
             <label class="sr" for="observe-input">Foto para observar</label>
             <input id="observe-input" name="photo" type="file" accept="image/*">
@@ -155,7 +159,7 @@
           <p id="voice-name" class="meta">Voz del navegador: sin activar</p>
           <p id="voice-warn" class="warn" hidden></p>
           <p id="voice-note" class="hint">
-            Síntesis del navegador. NVIDIA genera texto; la voz es una capa separada y opcional.
+            NVIDIA genera texto. ElevenLabs pone la voz cuando está configurado; el navegador ofrece una alternativa local.
           </p>
           <p id="mic-status" class="meta">Micrófono sin usar</p>
         </div>

@@ -1,0 +1,1 @@
+module.exports = { apps: [{ name: 'organima', script: 'dist/server.js', cwd: __dirname, instances: 1, exec_mode: 'fork', autorestart: true, max_restarts: 10, min_uptime: '10s', max_memory_restart: '512M', env: { NODE_ENV: 'production', ORGANIMA_RELEASE: process.env.ORGANIMA_RELEASE || 'unknown' }, time: true }] };

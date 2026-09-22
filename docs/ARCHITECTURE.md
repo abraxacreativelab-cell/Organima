@@ -1,7 +1,7 @@
 # Organima — arquitectura acordada y límites de esta entrega
 
 ## Resultado observable
-Una célula registra una observación, el organismo conserva sus relaciones y su historia, La política de atención decide prioridad, NVIDIA en Nebius conversa o interpreta imágenes, Tavily aporta evidencia externa vinculada a esa experiencia, y una célula robot recibe un objetivo cuyo éxito exige observación independiente. Panel web muestra cada paso y diferencia simulación de ejecución real.
+Una célula registra una observación, el organismo conserva sus relaciones y su historia, La política de atención decide prioridad, NVIDIA en Nebius conversa y MiniCPM en Nebius interpreta imágenes, Tavily aporta evidencia externa vinculada a esa experiencia, y una célula robot recibe un objetivo cuyo éxito exige observación independiente. Panel web muestra cada paso y diferencia simulación de ejecución real.
 
 ## Decisiones 2026-09-22
 - Repo nuevo público Organima; no hereda despliegues ni datos del Garden existente.
@@ -20,13 +20,13 @@ Una célula registra una observación, el organismo conserva sus relaciones y su
 Core local TypeScript/Express sirve API, grafo y panel. Cognición usa adaptadores HTTP con timeout, secretos sólo en servidor y errores explícitos. El navegador muestra stream de eventos. Robot real tendrá proceso Python/Jetson y MCU por USB/UART, implementado después del inventario. No se inventan pines ni alimentación.
 
 ## Contratos y rutas
-src/contracts.ts define fronteras de módulos. GET /api/state devuelve {mode,graph,cells,providers,robot}; GET /api/events es SSE con evento state; POST /api/chat {message} devuelve ChatReply; POST /api/research {query}; POST /api/observe {imageDataUrl}; POST /api/demo/step {step:'reset'|'move'|'verify'} sólo en simulation; POST /api/goals {object,target}; POST /api/stop {}; GET /api/health. Mutaciones requieren X-Organima-Token si ORGANIMA_OPERATOR_TOKEN está configurado; servidor público exige token. GET públicos no deben exponer datos privados: despliegue demo usa datos de demostración separados.
+src/contracts.ts define fronteras de módulos. GET /api/state devuelve {mode,graph,cells,providers,robot}; GET /api/events es SSE con evento state; POST /api/chat {message} devuelve ChatReply; POST /api/research {query}; POST /api/observe {imageDataUrl}; POST /api/demo/step {step:'reset'|'move'|'verify'} sólo en simulation; POST /api/goals {object,target}; POST /api/stop {}; GET /api/health; GET /api/voice muestra disponibilidad y POST /api/voice {text} sintetiza audio. Mutaciones requieren X-Organima-Token si ORGANIMA_OPERATOR_TOKEN está configurado; servidor público exige token. GET públicos no deben exponer datos privados: despliegue demo usa datos de demostración separados.
 
 ## Incertidumbre y autoridad
 Cada relación conserva fuente, fecha y confianza. Duplicados no se reaplican, eventos antiguos no pisan relaciones recientes. Ocultamiento significa unknown. Robot declara awaiting_verification; cámara global es la que demuestra objetivo posterior a su ejecución. Contextos privados no son autoridad canónica.
 
 ## Riesgos y decisiones pendientes de hardware
-Acceso real Nebius/Tavily/Jev; compatibilidad de cámaras; fuente de energía y soporte de la Jetson; capacidad de voz/barge-in del navegador y audio real; fecha/hora exacta de entrega sin confirmar. No se afirma cumplimiento del concurso hasta llamada NVIDIA en Nebius real, URL operativa y video de máximo 3 minutos.
+Compatibilidad de cámaras; fuente de energía y soporte de la Jetson; capacidad de voz/barge-in del navegador y audio real; fecha/hora exacta de entrega sin confirmar. No se afirma cumplimiento del concurso hasta llamada NVIDIA en Nebius real, URL operativa y video de máximo 3 minutos.
 
 ## Secuencia de demostración
 1. Mostrar objeto y consultar ubicación con evidencia.

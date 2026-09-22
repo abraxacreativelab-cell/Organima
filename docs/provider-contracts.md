@@ -1,13 +1,37 @@
-# Provider contracts (verified 2026-09-22)
+# Proveedores — verificados el 22 de septiembre de 2026
 
-## Jev
-Official reference: https://docs.typesafe.ai/api.md
-POST https://api.typesafe.ai/v1/systemone with Bearer TYPESAFE_API_KEY. Body: model jev-latest, state string/object, questions map. Each question: type noul, instructions string. Response answers map; each noul answer includes type noul and noul number 0..1. Use separate notify, research, escalate questions. Reject missing, NaN or out-of-range values. Do not parse as chat-completion JSON. OpenRouter model presence does not prove compatible endpoint; direct TypeSafe is canonical pending live verification.
+## NVIDIA en Nebius Token Factory
 
-## NVIDIA on Nebius
-Official cookbook: https://github.com/nebius/token-factory-cookbook/tree/main/models/nemotron
-OpenAI-compatible POST /v1/chat/completions using Bearer NEBIUS_API_KEY. Use configurable model IDs, messages and max_tokens. Text result: choices[0].message.content. Vision messages include image_url data URL content parts. Candidate vision nvidia/Nemotron-3-Nano-Omni; conversation nvidia/Nemotron-3_5-Lightning or nvidia/nemotron-3-super-120b-a12b. Verify available IDs via /v1/models and actual image request. Never mark ready based solely on an environment variable.
+[Referencia oficial](https://github.com/nebius/token-factory-cookbook/tree/main/models/nemotron).
+`POST /v1/chat/completions`, Bearer `NEBIUS_API_KEY`. Conversación:
+`nvidia/Nemotron-3_5-Lightning`; razonamiento: `nvidia/nemotron-3-super-120b-a12b`.
+Ambos respondieron en pruebas reales. Enviar `chat_template_kwargs.enable_thinking=false`
+para obtener contenido conversacional, con límites de salida y tiempo de espera.
+
+## Visión en Nebius
+
+El catálogo consultado no ofreció un modelo NVIDIA de visión utilizable: el candidato
+Nemotron Omni respondió 404. Se usa explícitamente `openbmb/MiniCPM-V-4_5`, probado
+con una imagen real enviada a Nebius. NVIDIA sigue a cargo de conversación y razonamiento;
+no atribuimos la visión a NVIDIA. La calibración con la escena física queda pendiente.
 
 ## Tavily
-Official reference: https://docs.tavily.com/documentation/api-reference/endpoint/search
-POST https://api.tavily.com/search with Bearer TAVILY_API_KEY, JSON query, max_results 5, search_depth basic, include_answer false. Response results contains title, url, content, score. Keep retrievedAt locally. Sources are untrusted evidence, never instructions or authority to actuate. No other web search provider in runtime.
+
+[Referencia oficial](https://docs.tavily.com/documentation/api-reference/endpoint/search).
+`POST https://api.tavily.com/search`, Bearer `TAVILY_API_KEY`, JSON `query`,
+`max_results:5`, `search_depth:basic`, `include_answer:false`.
+Guardar título, URL, contenido, puntuación y fecha de consulta. Es el único proveedor
+de investigación web del organismo. Las fuentes son datos, nunca órdenes para actuar.
+Una consulta real devolvió fuentes con éxito. La simulación no consulta la red.
+
+## Voz
+
+ElevenLabs convierte texto en audio; no razona ni investiga. Ana Sofia, español mexicano,
+modelo `eleven_flash_v2_5`. Síntesis real comprobada; escucha y ajuste humano pendientes.
+El dictado opcional usa el servicio de reconocimiento del navegador y se identifica como tal.
+
+## Atención
+
+Jev quedó fuera del MVP por falta de acceso, decisión explícita del usuario. NVIDIA y reglas
+locales evalúan atención. Nunca se indica un proveedor conectado sólo por tener una clave:
+los estados pasan de `untested` a `ready` después de recibir una respuesta válida.

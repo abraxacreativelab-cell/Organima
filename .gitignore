@@ -9,3 +9,5 @@ runtime/
 .cuadrilla/**/bitacora/
 .cuadrilla/**/briefs/
 .cuadrilla/**/estado.json
+
+.cuadrilla/**/bitacora.jsonl
