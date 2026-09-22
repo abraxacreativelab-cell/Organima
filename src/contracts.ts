@@ -9,7 +9,7 @@ export interface GoalStatus { goal: Goal; state: 'accepted' | 'running' | 'await
 export interface ResearchSource { title: string; url: string; content: string; score: number; }
 export interface ResearchResult { query: string; sources: ResearchSource[]; retrievedAt: string; mode: Mode; }
 export interface ProviderStatus { name: string; configured: boolean; model?: string; state: 'unconfigured' | 'untested' | 'ready' | 'error' | 'simulation'; detail?: string; }
-export interface AttentionDecision { notify: boolean; research: boolean; escalate: boolean; probability: number; provider: 'jev'; mode: Mode; }
+export interface AttentionDecision { notify: boolean; research: boolean; escalate: boolean; probability: number; provider: 'jev' | 'nvidia' | 'rules'; mode: Mode; }
 export interface ChatReply { text: string; mode: Mode; sources: ResearchSource[]; decision: AttentionDecision; model: string; }
 export interface MemoryPort {
  append(event: OrganimaEvent): Promise<boolean>;

@@ -6,13 +6,13 @@ Una célula registra una observación, el organismo conserva sus relaciones y su
 ## Decisiones 2026-09-22
 - Repo nuevo público Organima; no hereda despliegues ni datos del Garden existente.
 - Constructor DeepSeek, juez Opus 5, arquitecto integra y reejecuta pruebas. Autorización expresa para trabajo nocturno.
-- Jev obligatorio. NVIDIA/Nebius preferidos tanto visión como generación conversacional. Síntesis de voz es una capa separada; ElevenLabs si disponible, voz del navegador sólo como respaldo etiquetado.
+- Jev fuera del MVP por falta de cupos (corrección del usuario). NVIDIA/Nebius preferidos tanto visión como generación conversacional. Síntesis de voz es una capa separada; ElevenLabs si disponible, voz del navegador sólo como respaldo etiquetado.
 - Tavily es la única salida de investigación web del runtime. Proveedores de inferencia y GitHub son transporte/infraestructura, no fuentes alternativas de investigación.
 - Contexto por célula → grafo compartido → conocimiento estable en Git local, sincronizado a GitHub. Estado actual es proyección rápida del grafo.
 - Para el MVP de un cuarto: un escritor de eventos JSONL local durable, reconstrucción del grafo al iniciar; no nueva base de datos ni dependencia del Supabase de producción. Crecimiento multi-proceso requerirá almacenamiento transaccional detrás de MemoryPort.
 - Registro persistente de eventos relevantes, no video continuo ni audio crudo. Inferencias no se convierten en hechos observados.
 - Jerarquía de objetivos con parentId; publicaciones de eventos por contrato. Nada de agentes enviándose prompts arbitrariamente.
-- Máquinas de estados deterministas para ejecución y cancelación. Jev decide atención, nunca anula parada física.
+- Máquinas de estados deterministas para ejecución y cancelación. La política de atención usa reglas/NVIDIA y nunca anula parada física.
 - Simulador para probar integración sin robot. Sus datos y resultados siempre marcan simulation, excluidos de evidencia de hardware.
 - Nada cambia automáticamente protocolos/guardrails en Git. Consolidación produce una propuesta revisable.
 
