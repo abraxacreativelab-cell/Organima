@@ -14,7 +14,7 @@
  * - El modo (`live` / `simulation`) se fija con la primera escritura y no se mezcla en el store.
  * - Este módulo no escribe nada más que `directory/events.jsonl` y nunca toca `knowledge/`.
  */
-import { mkdir, open, readFile } from 'node:fs/promises';
+import { mkdir, open, readFile, stat } from 'node:fs/promises';
 import type { FileHandle } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { z } from 'zod';
@@ -331,10 +331,11 @@ function eventText(event: OrganimaEvent): string {
  * corrupto (JSON inválido, evento inválido, línea vacía, id repetido o modo mezclado) lanza y
  * deja el archivo intacto: no se trunca ni se descarta nada en silencio.
  */
-async function loadState(file: string): Promise<MemoryState> {
+async function loadState(file: string, maxBytes: number): Promise<MemoryState> {
   const state = emptyState();
   let text: string;
   try {
+    if((await stat(file)).size>maxBytes)throw new Error('memory journal exceeds capacity; archive before restarting');
     text = await readFile(file, 'utf8');
   } catch (error) {
     if (isErrno(error, 'ENOENT')) return state;
@@ -379,10 +380,11 @@ async function loadState(file: string): Promise<MemoryState> {
 }
 
 /** `append` + `fsync`: el evento está en disco antes de tocar la proyección en memoria. */
-async function appendLineDurably(file: string, line: string): Promise<void> {
+async function appendLineDurably(file: string, line: string, maxBytes: number): Promise<void> {
   let handle: FileHandle | undefined;
   try {
     handle = await open(file, 'a');
+    if((await handle.stat()).size+Buffer.byteLength(line)>maxBytes)throw new Error('memory journal capacity reached; no data was discarded');
     await handle.writeFile(line, { encoding: 'utf8' });
     await handle.sync();
   } finally {
@@ -397,7 +399,7 @@ class JsonlMemory implements MemoryPort {
   readonly #state: MemoryState;
   #queue: Promise<void> = Promise.resolve();
 
-  constructor(file: string, state: MemoryState) {
+  constructor(file: string, state: MemoryState, readonly maxBytes: number) {
     this.#file = file;
     this.#state = state;
   }
@@ -422,7 +424,7 @@ class JsonlMemory implements MemoryPort {
         `memory store is locked to mode "${currentMode}"; rejected event with mode "${prepared.event.mode}"`,
       );
     }
-    await appendLineDurably(this.#file, `${JSON.stringify(prepared.event)}\n`);
+    await appendLineDurably(this.#file, `${JSON.stringify(prepared.event)}\n`,this.maxBytes);
     applyPrepared(this.#state, prepared);
     return true;
   }
@@ -485,10 +487,11 @@ class JsonlMemory implements MemoryPort {
  * Abre (o crea) el store durable en `directory/events.jsonl` y reconstruye la proyección.
  * Rechaza rutas vacías y nunca escribe fuera de `directory`.
  */
-export async function createMemory(directory: string): Promise<MemoryPort> {
+export async function createMemory(directory: string, maxBytes = 50 * 1024 * 1024): Promise<MemoryPort> {
+  if(!Number.isSafeInteger(maxBytes)||maxBytes<1)throw new Error('invalid journal capacity');
   const root = requireDirectory(directory);
   await mkdir(root, { recursive: true });
   const file = join(root, EVENTS_FILE_NAME);
-  const state = await loadState(file);
-  return new JsonlMemory(file, state);
+  const state = await loadState(file,maxBytes);
+  return new JsonlMemory(file, state,maxBytes);
 }

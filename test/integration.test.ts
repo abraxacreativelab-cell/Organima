@@ -32,6 +32,8 @@ test('HTTP: auth, observations, goal verification, context and restart',async()=
   assert.equal((await post('/api/demo/step',{step:'move'})).status,200);
   assert.equal(memory.snapshot().relations[0].object,'table');
   assert.equal((await post('/api/goals',{object:'red_ball',target:'paper'})).status,202);
+  assert.equal((await post('/api/goals',{object:'red_ball',target:'paper'})).status,409);
+  assert.equal(memory.snapshot().events.at(-1)?.type,'goal.rejected');
   assert.equal((await post('/api/demo/step',{step:'verify'})).status,409);
   await service.tick();offset=0;await service.tick();
   const verify=await post('/api/demo/step',{step:'verify'});assert.equal(verify.status,200);assert.equal((await verify.json()).robot.state,'verified');
@@ -45,7 +47,7 @@ test('HTTP: auth, observations, goal verification, context and restart',async()=
 test('live API never exposes simulation controls',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'organima-live-api-'));const service=createApp({mode:'live',memory:await createMemory(dir),cognition,robot:createRobot({mode:'live'})});
  const server=service.app.listen(0,'127.0.0.1');await once(server,'listening');
- try{const res=await fetch(`http://127.0.0.1:${(server.address() as AddressInfo).port}/api/demo/step`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({step:'move'})});assert.equal(res.status,409);}
+ try{const goal=await fetch(`http://127.0.0.1:${(server.address() as AddressInfo).port}/api/goals`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({object:'red_ball',target:'paper'})});assert.equal(goal.status,409);assert.equal(service.state().graph.events.at(-1)?.type,'goal.rejected');const res=await fetch(`http://127.0.0.1:${(server.address() as AddressInfo).port}/api/demo/step`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({step:'move'})});assert.equal(res.status,409);}
  finally{service.close();await new Promise<void>(resolve=>server.close(()=>resolve()));await rm(dir,{recursive:true,force:true});}
 });
 test('a stop cancels a cloud movement decision still in flight',async()=>{
@@ -60,7 +62,7 @@ test('a stop cancels a cloud movement decision still in flight',async()=>{
  const post=(path:string,body:unknown)=>fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
  try{
   const pending=post('/api/chat',{message:'Mueve la pelota roja a la hoja'});await entered;
-  assert.equal((await post('/api/chat',{message:'¡Alto!'})).status,200);
+  for(const message of ['¡Alto!','detente ya','para ya','para el robot','stop ya','por favor detén el robot ahora'])assert.equal((await post('/api/chat',{message})).status,200,message);
   resolveIntent({action:'move',object:'red_ball',target:'paper',reason:'test'});
   assert.equal((await pending).status,409);assert.equal(robot.status(),null);
  }finally{service.close();await new Promise<void>(r=>server.close(()=>r()));await rm(dir,{recursive:true,force:true});}
@@ -75,4 +77,12 @@ test('voice route protects synthesis and returns audio bytes',async()=>{
   const res=await fetch(base+'/api/voice',{method:'POST',headers:{'Content-Type':'application/json','X-Organima-Token':'test'},body:JSON.stringify({text:'hola'})});
   assert.equal(res.status,200);assert.match(res.headers.get('content-type')!,/audio/);assert.equal((await res.arrayBuffer()).byteLength,3);assert.equal(calls,1);
  }finally{service.close();await new Promise<void>(r=>server.close(()=>r()));await rm(dir,{recursive:true,force:true});}
+});
+test('journal quota rejects writes without changing the durable projection',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'organima-quota-'));
+ try{
+  const memory=await createMemory(dir,1);
+  await assert.rejects(()=>memory.append({id:'quota',type:'note',cellId:'test',occurredAt:new Date().toISOString(),mode:'simulation',payload:{text:'too large'}}),/capacity/);
+  assert.equal(memory.snapshot().version,0);assert.equal((await createMemory(dir,1)).snapshot().version,0);
+ }finally{await rm(dir,{recursive:true,force:true});}
 });

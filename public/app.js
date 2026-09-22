@@ -1348,7 +1348,13 @@ function initApp() {
         audioPlayer.onended = () => { if (audioUrl) URL.revokeObjectURL(audioUrl); audioUrl=null; };
         await audioPlayer.play();
         setText(dom.voiceName, 'Ana Sofia · español mexicano · ElevenLabs');
-      } catch(error) { if (!controller.signal.aborted) setText(dom.voiceName, error.message); }
+      } catch(error) {
+        if(controller.signal.aborted)return;
+        remoteVoice=false;refreshVoices();
+        setText(dom.voiceWarn,'ElevenLabs no está disponible; se usa la voz local indicada.');dom.voiceWarn.hidden=false;
+        if(ui.voice)return speak(text);
+        setText(dom.voiceName,error.message);
+      }
       return;
     }
     if (!synthesisAvailable()) return { spoken: false, reason: 'synthesis-unavailable' };

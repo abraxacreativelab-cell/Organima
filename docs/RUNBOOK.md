@@ -18,3 +18,11 @@ Nginx termina TLS y reenvía al puerto local. Dominio de demostración propuesto
 5. Para rollback manual, usar el ecosystem de un SHA anterior confirmado y verificar salud; no borrar datos.
 
 La demostración pública es un banco de integración simulado. Pruebas reales de NVIDIA, Tavily, visión y voz se ejecutan en instancia live privada hasta preparar acceso y validar su recorrido. El robot físico requiere inventario, firmware y pruebas manuales posteriores.
+
+## Límites de la demostración
+El journal tiene un límite duro de 50 MiB. Al alcanzarlo rechaza nuevas escrituras, conserva
+lo existente y no amplía el archivo. No borra historia automáticamente. Para una nueva sesión
+simulada, detener sólo Organima, archivar su directorio de datos fuera del runtime activo y
+reiniciar con un directorio vacío; conservar el archivo anterior hasta verificar la nueva sesión.
+Las mutaciones de demostración tienen además un presupuesto de 60 por minuto por instancia.
+Conversación y parada mantienen su propia lógica; la parada no queda bloqueada por esa cuota.

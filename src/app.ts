@@ -16,9 +16,14 @@ export function createApp(options: AppOptions) {
  const event=async(type:string,cellId:string,payload:Record<string,unknown>)=>{const e:OrganimaEvent={id:randomUUID(),type,cellId,occurredAt:new Date().toISOString(),mode,payload};await memory.append(e);publish();return e;};
  app.use((_req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('Cache-Control','no-store');next();});
  app.use(express.json({limit:'3mb'}));
+ let writeWindow=Date.now();let writes=0;
  app.use('/api',(req,res,next)=>{
   if(req.method==='GET'){next();return;}
   if(options.operatorToken){const supplied=Buffer.from(req.get('X-Organima-Token')??'');const expected=Buffer.from(options.operatorToken);if(supplied.length!==expected.length||!timingSafeEqual(supplied,expected)){res.status(401).json({error:'Se requiere el acceso de operador.'});return;}}
+  if(mode==='simulation'&&req.path!=='/stop'&&req.path!=='/chat'){
+   if(Date.now()-writeWindow>=60000){writes=0;writeWindow=Date.now();}
+   if(++writes>60){res.setHeader('Retry-After','60');res.status(429).json({error:'Límite de demostración: espera un minuto.'});return;}
+  }
   if(!req.is('application/json')){res.status(415).json({error:'Usa application/json.'});return;}
   next();
  });
@@ -40,7 +45,7 @@ export function createApp(options: AppOptions) {
   const {message}=z.object({message:z.string().trim().min(1).max(4000)}).strict().parse(req.body);
   // Stop remains available even while cloud conversation is busy.
   const stopWords=message.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^\p{L}\p{N}\s]+/gu,' ').trim();
-  if(['para','alto','detente','stop','deten el robot'].includes(stopWords)){
+  if(/^(?:(?:por favor|oye)\s+)?(?:para|alto|detente|stop|deten)(?:\s+(?:el robot|ya|ahora|por favor))*$/.test(stopWords)){
    motionEpoch++;
    const status=robot.cancel('Parada solicitada por voz o texto');await event('goal.cancelled','robot',{status});
    res.json({text:status?'He cancelado el objetivo del robot.':'No hay ningún objetivo activo.',mode,sources:[],decision:{notify:true,research:false,escalate:false,probability:1,provider:'rules',mode},model:'local-stop'});return;
@@ -63,8 +68,8 @@ export function createApp(options: AppOptions) {
    }else if(intent.action==='move'){
     if(requestedEpoch!==motionEpoch){res.status(409).json({error:'La parada canceló esta orden pendiente.'});return;}
     const status=robot.submit({id:randomUUID(),cellId:'robot',object:'red_ball',target:'paper',relation:'ON',deadline:new Date(Date.now()+60000).toISOString(),mode});
-    await event('goal.accepted','robot',{status});
-    reply={text:status.state==='failed'?'El robot físico todavía no está conectado. No he enviado movimiento.':`Objetivo aceptado${mode==='simulation'?' en simulación':''}: llevar la pelota roja a la hoja. Esperaré evidencia visual antes de darlo por cumplido.`,mode,sources:[],decision:{notify:true,research:false,escalate:false,probability:1,provider:'rules',mode},model:'master-dispatch'};
+    await event(status.state==='failed'?'goal.rejected':'goal.accepted','robot',{state:status.state,reason:status.reason??'',status});
+    reply={text:status.state==='failed'?`No se aceptó el objetivo: ${status.reason??'robot no disponible'}.`:`Objetivo aceptado${mode==='simulation'?' en simulación':''}: llevar la pelota roja a la hoja. Esperaré evidencia visual antes de darlo por cumplido.`,mode,sources:[],decision:{notify:true,research:false,escalate:false,probability:1,provider:'rules',mode},model:'master-dispatch'};
    }else if(intent.action==='stop'){
     motionEpoch++;
     const status=robot.cancel('Parada solicitada por conversación');await event('goal.cancelled','robot',{status});
@@ -103,7 +108,7 @@ export function createApp(options: AppOptions) {
    res.json({relations,decision,announcement,robot:robot.status()});
   }finally{observing=false;}
  });
- app.post('/api/goals',async(req,res)=>{const {object,target}=z.object({object:z.literal('red_ball'),target:z.literal('paper')}).strict().parse(req.body);const result=robot.submit({id:randomUUID(),cellId:'robot',object,target,relation:'ON',deadline:new Date(Date.now()+60000).toISOString(),mode});await event('goal.accepted','robot',{status:result});res.status(202).json(result);});
+ app.post('/api/goals',async(req,res)=>{const {object,target}=z.object({object:z.literal('red_ball'),target:z.literal('paper')}).strict().parse(req.body);const result=robot.submit({id:randomUUID(),cellId:'robot',object,target,relation:'ON',deadline:new Date(Date.now()+60000).toISOString(),mode});await event(result.state==='failed'?'goal.rejected':'goal.accepted','robot',{state:result.state,reason:result.reason??'',status:result});res.status(result.state==='failed'?409:202).json(result);});
  app.post('/api/stop',async(_req,res)=>{motionEpoch++;const result=robot.cancel('Parada solicitada por operador');await event('goal.cancelled','robot',{status:result});res.json({robot:result});});
  app.post('/api/demo/step',async(req,res)=>{
   if(mode!=='simulation'){res.status(409).json({error:'Escenarios disponibles únicamente en simulación.'});return;}
