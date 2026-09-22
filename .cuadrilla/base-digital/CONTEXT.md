@@ -1,0 +1,8 @@
+# Contexto común
+Leer CLAUDE.md, docs/ARCHITECTURE.md, docs/provider-contracts.md y src/contracts.ts completos. Proyecto nuevo. Implementar sólo archivos asignados. Stack Node 22, TypeScript estricto, Express 5, Zod 3, node:test ejecutado con tsx. Sin librerías adicionales. Usar fetch nativo e inyección de fetch para pruebas, que nunca llaman servicios reales. Instalar con npm ci en tu worktree si falta node_modules (no cambiar lockfile).
+
+Autorizado por usuario: construir base digital esta noche, Jev obligatorio, NVIDIA/Nebius para visión y conversación, Tavily única fuente de investigación externa. Credenciales live son responsabilidad del arquitecto; ausencia explícita, jamás simular silenciosamente en modo live. Constructor DeepSeek; juez Opus 5 por membresía. Tu trabajo no incluye git commit, merge, deploy ni leer .env ajenos.
+
+Firma común está en src/contracts.ts, no editar. Entradas externas validadas por Zod o validadores estrictos. Promise failures deben propagarse con mensajes sin secretos. Pruebas con node:test y node:assert/strict. Directorios de prueba fs.mkdtemp en tmpdir y borrar sólo su propio directorio. HTTP test usa listen(0) cuando necesario. Exportar las funciones especificadas sin efectos al importar. Datos de simulación etiquetados, nunca confundir con percepción real. No hacer compras ni operar robot.
+
+Procedimiento: implementar código y pruebas de fallos, correr gate y npm run check, corregir. No crear placeholders. Si hay un límite externo explicarlo sin fabricar resultado. Asegurar que npm run check funciona en tu pilar sin otros pilares integrados.

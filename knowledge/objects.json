@@ -1,0 +1,15 @@
+{
+  "red_ball": {
+    "label": "Pelota roja",
+    "canonical": {
+      "predicate": "ON",
+      "object": "cup"
+    }
+  },
+  "cup": {
+    "label": "Taza"
+  },
+  "paper": {
+    "label": "Hoja objetivo"
+  }
+}
