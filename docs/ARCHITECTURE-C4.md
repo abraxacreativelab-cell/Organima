@@ -497,7 +497,8 @@ POST /api/lab/turn"]
 emptySnapshot()
 buildTurnPrompt(message)"]
   COG["createCognition(...).reply(...)
-Atención → investigación opcional → respuesta"]
+Jev → investigación opcional → respuesta NVIDIA"]
+  JEV["createJevAttention(...).decide(state)\nexperimental_evaluate · typesafe-ai/jev\nTres probabilidades con umbral 0.7"]
   TTS["POST /api/lab/tts
 buildNvidiaRequest(config, text)"]
   REQ["Multipart /v1/audio/synthesize_online
@@ -513,7 +514,7 @@ PCM16LE → AudioBuffer → programación de fragmentos"]
   CLIENT -->|"Texto al cerrar turno"| TURN
   TURN --> HIST
   HIST --> COG
-  COG --> JEV
+  COG -->|"Evalúa atención"| JEV
   COG -->|"Texto completo"| CLIENT
   CLIENT -->|"Texto a sintetizar"| TTS
   TTS --> REQ
