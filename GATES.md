@@ -24,3 +24,11 @@
   EXPECT: PUBLIC_OK
 - [x] G7 DeepSeek construye, Opus 5 revisa y el arquitecto vuelve a ejecutar las pruebas.
   EVIDENCE: Los siete pilares y la integración recibieron aprobación de Opus 5. Ver docs/INTEGRATION-REVIEW.md. Arquitecto repitió suite y navegador; GitHub CI con Chromium terminó correctamente.
+
+## Comparación de voz en curso
+Criterios y bloqueos en [docs/VOICE-LAB-GATES.md](docs/VOICE-LAB-GATES.md). No desplegada; falta NVIDIA Speech y revisión Opus.
+
+Prueba de agentes completos: [docs/VOICE-AGENTS-GATES.md](docs/VOICE-AGENTS-GATES.md). NVIDIA ya autorizado; revisión Opus pendiente.
+
+## Reactivación de Jev vía Vercel
+Seguimiento de resultados: [.cuadrilla/jev-gateway/GATES.md](.cuadrilla/jev-gateway/GATES.md).

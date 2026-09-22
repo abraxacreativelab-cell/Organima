@@ -32,6 +32,9 @@ El dictado opcional usa el servicio de reconocimiento del navegador y se identif
 
 ## Atención
 
-Jev quedó fuera del MVP por falta de acceso, decisión explícita del usuario. NVIDIA y reglas
-locales evalúan atención. Nunca se indica un proveedor conectado sólo por tener una clave:
+Jev se reactiva por instrucción del usuario mediante `typesafe-ai/jev` en Vercel AI Gateway.
+AI SDK 7 `experimental_evaluate`, tres preguntas booleanas con probabilidades, umbral 0.7.
+`ORGANIMA_ATTENTION_PROVIDER=jev`, secreto `AI_GATEWAY_API_KEY`; sin fallback silencioso.
+Primera llamada real: HTTP 403 por tarjeta requerida. Ver [JEV.md](JEV.md).
+NVIDIA queda como selección explícita de atención; simulación usa reglas. Nunca se indica un proveedor conectado sólo por tener una clave:
 los estados pasan de `untested` a `ready` después de recibir una respuesta válida.

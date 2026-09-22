@@ -6,13 +6,13 @@ Una célula registra una observación, el organismo conserva sus relaciones y su
 ## Decisiones 2026-09-22
 - Repo nuevo público Organima; no hereda despliegues ni datos del Garden existente.
 - Constructor DeepSeek, juez Opus 5, arquitecto integra y reejecuta pruebas. Autorización expresa para trabajo nocturno.
-- Jev fuera del MVP por falta de cupos (corrección del usuario). NVIDIA/Nebius preferidos tanto visión como generación conversacional. Síntesis de voz es una capa separada; ElevenLabs si disponible, voz del navegador sólo como respaldo etiquetado.
+- Jev reactivado por instrucción del usuario vía Vercel AI Gateway; primera llamada bloqueada por tarjeta requerida (403), ver JEV.md. NVIDIA/Nebius preferidos tanto visión como generación conversacional. Síntesis de voz es una capa separada; ElevenLabs si disponible, voz del navegador sólo como respaldo etiquetado.
 - Tavily es la única salida de investigación web del runtime. Proveedores de inferencia y GitHub son transporte/infraestructura, no fuentes alternativas de investigación.
 - Contexto por célula → grafo compartido → conocimiento estable en Git local, sincronizado a GitHub. Estado actual es proyección rápida del grafo.
 - Para el MVP de un cuarto: un escritor de eventos JSONL local durable, reconstrucción del grafo al iniciar; no nueva base de datos ni dependencia del Supabase de producción. Crecimiento multi-proceso requerirá almacenamiento transaccional detrás de MemoryPort.
 - Registro persistente de eventos relevantes, no video continuo ni audio crudo. Inferencias no se convierten en hechos observados.
 - Jerarquía de objetivos con parentId; publicaciones de eventos por contrato. Nada de agentes enviándose prompts arbitrariamente.
-- Máquinas de estados deterministas para ejecución y cancelación. La política de atención usa reglas/NVIDIA y nunca anula parada física.
+- Máquinas de estados deterministas para ejecución y cancelación. La política de atención usa Jev vía Vercel en live seleccionado, NVIDIA como opción explícita y reglas en simulación y nunca anula parada física.
 - Simulador para probar integración sin robot. Sus datos y resultados siempre marcan simulation, excluidos de evidencia de hardware.
 - Nada cambia automáticamente protocolos/guardrails en Git. Consolidación produce una propuesta revisable.
 
@@ -36,7 +36,7 @@ Compatibilidad de cámaras; fuente de energía y soporte de la Jetson; capacidad
 5. Recordar un evento anterior. Panel revela qué memoria y qué proveedor contribuyeron.
 
 ## Disponibilidad verificada de proveedores
-2026-09-22: Token Factory devolvió 200 en /v1/models y chat para Nemotron 3.5 Lightning y Nemotron 3 Super. Las llamadas necesitan chat_template_kwargs.enable_thinking=false para voz y decisiones JSON. Jev excluido explícitamente por usuario al no disponer de cuenta.
+2026-09-22: Token Factory devolvió 200 en /v1/models y chat para Nemotron 3.5 Lightning y Nemotron 3 Super. Las llamadas necesitan chat_template_kwargs.enable_thinking=false para voz y decisiones JSON. Actualización posterior del usuario: Jev vuelve mediante Vercel AI Gateway, sin sustituir NVIDIA/Nebius para razonamiento.
 Nemotron Nano Omni devolvió 404 en endpoint general y us-central1. Visión MVP usa openbmb/MiniCPM-V-4_5 en Nebius, probado con imagen roja y respuesta correcta. Esto conserva NVIDIA para conversación/razonamiento y Nebius para ambos; no se afirma que el modelo visual sea NVIDIA. Reemplazable por NVIDIA cuando exista endpoint operativo.
 Tavily devolvió 200 con resultados de documentación oficial. ElevenLabs enumeró una voz femenina mexicana conversacional disponible; falta validación auditiva del audio generado.
 Nebius MCP instalado en Codex con SAFE_MODE=true; perfil local organima, handshake y nebius_profiles probados. No requiere reiniciar la construcción; para herramientas nuevas en la sesión se necesita recargar conexión.

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="es-MX">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Laboratorio de voz A/B · Organima</title>
+    <!-- Sin archivo extra: evita que el navegador pida /favicon.ico y ensucie la consola. -->
+    <link rel="icon" href="data:," />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0d1117;
+        --panel: #161b22;
+        --panel-2: #1c2230;
+        --line: #2a3242;
+        --text: #e6edf3;
+        --muted: #9aa7b8;
+        --accent: #4cc2ff;
+        --accent-2: #ff8ac2;
+        --ok: #46d39a;
+        --warn: #ffc14d;
+        --bad: #ff6b6b;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: radial-gradient(1200px 600px at 15% -10%, #1b2433 0%, var(--bg) 55%);
+        color: var(--text);
+        font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      main { max-width: 940px; margin: 0 auto; padding: 32px 20px 64px; }
+      header h1 { margin: 0 0 6px; font-size: 30px; letter-spacing: -0.02em; }
+      header .lead { margin: 0 0 8px; color: var(--muted); }
+      .hint { margin: 0; color: var(--muted); font-size: 14px; }
+      .panel {
+        margin-top: 20px;
+        overflow-x: auto;
+        padding: 18px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+      }
+      .panel h2 { margin: 0 0 10px; font-size: 18px; }
+      .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+      .row + .row { margin-top: 10px; }
+      label { color: var(--muted); font-size: 14px; }
+      select, input[type="text"] {
+        flex: 1 1 240px;
+        min-width: 0;
+        max-width: 100%;
+        padding: 10px 12px;
+        color: var(--text);
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        font: inherit;
+      }
+      button {
+        padding: 10px 16px;
+        color: #04121c;
+        background: linear-gradient(180deg, var(--accent), #2aa7e8);
+        border: 0;
+        border-radius: 10px;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button.secondary {
+        color: var(--text);
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+      }
+      button:disabled { opacity: 0.45; cursor: not-allowed; }
+      .state { margin: 12px 0 0; color: var(--muted); }
+      .state.on { color: var(--ok); }
+      .state.off { color: var(--warn); }
+      .notice { min-height: 22px; margin: 10px 0 0; color: var(--warn); font-size: 14px; }
+      .note { color: var(--muted); font-size: 13px; }
+      .interim { min-height: 24px; margin: 0 0 8px; color: var(--accent); font-style: italic; }
+      .history { max-height: 260px; overflow-y: auto; margin: 0; padding: 0 0 0 4px; list-style: none; }
+      .history li { margin: 8px 0; }
+      .history li.user .said { color: var(--text); }
+      .history li.assistant .said { color: var(--accent-2); }
+      .history .who { display: inline-block; min-width: 78px; color: var(--muted); font-size: 13px; }
+      .history .said { white-space: pre-wrap; }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      th, td { padding: 7px 8px; text-align: left; border-bottom: 1px solid var(--line); }
+      th { color: var(--muted); font-weight: 600; }
+      td { color: var(--text); font-variant-numeric: tabular-nums; }
+      .foot { margin-top: 18px; color: var(--muted); font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Laboratorio de voz A/B</h1>
+        <p class="lead">
+          Habla y escucha la respuesta sin pulsar enviar. Se comparan el mismo cerebro y el mismo
+          transcriptor; lo único que cambia es el proveedor de voz.
+        </p>
+        <p class="hint">
+          🎧 Usa auriculares: el micrófono sigue abierto mientras el agente habla y sin auriculares
+          puede escucharse a sí mismo. El dictado usa el transcriptor del navegador (Web Speech API,
+          es-MX); ese audio lo procesa el servicio de reconocimiento del navegador, no Organima.
+        </p>
+      </header>
+
+      <section class="panel" aria-label="Controles">
+        <div class="row">
+          <label for="provider">Proveedor de voz</label>
+          <select id="provider">
+            <option value="elevenlabs">ElevenLabs (flash v2.5)</option>
+            <option value="nvidia">NVIDIA TTS (NIM / NVCF)</option>
+          </select>
+          <span id="provider-note" class="note"></span>
+        </div>
+        <div class="row">
+          <button id="start" type="button">Iniciar conversación</button>
+          <button id="terminate" type="button" class="secondary">Terminar</button>
+          <button id="interrupt" type="button" class="secondary">Interrumpir</button>
+        </div>
+        <p id="mic-state" class="state" aria-live="polite">Micrófono detenido.</p>
+        <form id="fallback-form" class="row" autocomplete="off">
+          <label for="fallback-text">Texto de respaldo</label>
+          <input
+            id="fallback-text"
+            type="text"
+            maxlength="1600"
+            placeholder="Escribe y envía; la respuesta se reproduce igual"
+          />
+          <button type="submit">Enviar</button>
+        </form>
+        <p id="notice" class="notice" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="panel" aria-label="Conversación">
+        <h2>Conversación</h2>
+        <p id="interim" class="interim"></p>
+        <ol id="history" class="history"></ol>
+      </section>
+
+      <section class="panel" aria-label="Latencias">
+        <h2>Latencias (últimas 20)</h2>
+        <p class="hint">
+          «fin habla→primer playback» es una <strong>estimación</strong> de cuándo el navegador
+          agenda el primer fragmento de audio (reloj de AudioContext), no una medición acústica.
+          «fin habla→transcripción» sólo aparece cuando el evento <code>speechend</code> del
+          navegador ocurrió antes del resultado final; si no, se marca <em>n/d</em> y no se
+          inventa: en ese caso «fin habla→primer playback» también queda <em>n/d</em>, mientras que
+          el cerebro y el primer chunk del TTS se miden desde su propio origen (la petición de
+          cada uno). Los turnos cancelados o fallidos no entran a la tabla.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">#</th><th scope="col">Proveedor</th>
+              <th scope="col">fin habla→transcripción</th>
+              <th scope="col">cerebro (servidor)</th>
+              <th scope="col">TTS primer chunk</th>
+              <th scope="col">fin habla→primer playback (est.)</th><th scope="col">transcripción→primer playback (est.)</th>
+            </tr>
+          </thead>
+          <tbody id="latency-body"></tbody>
+        </table>
+        <p class="foot">
+          El cerebro (NVIDIA en Nebius) devuelve el texto completo de una vez: aquí no se simula
+          streaming de lenguaje. Lo que sí llega progresivamente es el audio del proveedor de voz.
+        </p>
+      </section>
+    </main>
+    <script src="/voice-lab.js"></script>
+  </body>
+</html>

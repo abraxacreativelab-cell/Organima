@@ -53,7 +53,7 @@ la escena. Nunca se atribuyen fuentes o movimientos reales a la simulación.
 | Memoria compartida | Grafo reconstruible desde eventos JSONL persistidos |
 | Conocimiento estable | Archivos versionados en `knowledge/` |
 
-Jev quedó fuera del MVP por falta de acceso. Los detalles y las pruebas de disponibilidad están en
+Jev se reactiva mediante Vercel AI Gateway para atención; la habilitación real de la cuenta se documenta en [JEV.md](docs/JEV.md). Los detalles y las pruebas de disponibilidad están en
 [contratos de proveedores](docs/provider-contracts.md). La proyección del estado actual pertenece
 al grafo; no constituye una cuarta memoria. El archivo Git conserva conocimiento estable, no cada
 fotograma ni una transcripción privada del laboratorio.
