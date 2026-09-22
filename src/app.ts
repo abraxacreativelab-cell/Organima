@@ -39,7 +39,8 @@ export function createApp(options: AppOptions) {
  app.post('/api/chat',async(req,res)=>{
   const {message}=z.object({message:z.string().trim().min(1).max(4000)}).strict().parse(req.body);
   // Stop remains available even while cloud conversation is busy.
-  if(/^(?:para|alto|detente|stop|detén el robot)[.!\s]*$/iu.test(message)){
+  const stopWords=message.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^\p{L}\p{N}\s]+/gu,' ').trim();
+  if(['para','alto','detente','stop','deten el robot'].includes(stopWords)){
    motionEpoch++;
    const status=robot.cancel('Parada solicitada por voz o texto');await event('goal.cancelled','robot',{status});
    res.json({text:status?'He cancelado el objetivo del robot.':'No hay ningún objetivo activo.',mode,sources:[],decision:{notify:true,research:false,escalate:false,probability:1,provider:'rules',mode},model:'local-stop'});return;

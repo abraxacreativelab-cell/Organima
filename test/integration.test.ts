@@ -60,7 +60,7 @@ test('a stop cancels a cloud movement decision still in flight',async()=>{
  const post=(path:string,body:unknown)=>fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
  try{
   const pending=post('/api/chat',{message:'Mueve la pelota roja a la hoja'});await entered;
-  assert.equal((await post('/api/chat',{message:'alto'})).status,200);
+  assert.equal((await post('/api/chat',{message:'¡Alto!'})).status,200);
   resolveIntent({action:'move',object:'red_ball',target:'paper',reason:'test'});
   assert.equal((await pending).status,409);assert.equal(robot.status(),null);
  }finally{service.close();await new Promise<void>(r=>server.close(()=>r()));await rm(dir,{recursive:true,force:true});}

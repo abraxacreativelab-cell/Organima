@@ -10,4 +10,6 @@ for(const file of new Set(files)){
  if(values.some(v=>body.includes(v)))bad.push(file);
  if(/(?:tvly-(?:dev-)?[A-Za-z0-9_-]{20,}|sk-ant-[A-Za-z0-9_-]{20,})/.test(body))bad.push(file);
 }
+const history=execFileSync('git',['log','-p','HEAD'],{encoding:'utf8',maxBuffer:100*1024*1024});
+if(values.some(v=>history.includes(v)))bad.push('[git history]');
 if(bad.length){console.error('Se encontraron credenciales en archivos publicables:',[...new Set(bad)]);process.exitCode=1;}else console.log('SECRET_CHECK_OK: no configured secret values in publishable files');

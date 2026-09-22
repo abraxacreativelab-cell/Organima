@@ -1393,22 +1393,26 @@ function initApp() {
   fetch('/api/voice').then(r=>r.json()).then(status=>{ remoteVoice=status.configured===true; refreshVoices(); }).catch(()=>{});
   let cameraMonitor = null;
   let cameraStarting = false;
+  let cameraGeneration = 0;
   document.getElementById('camera-start')?.addEventListener('click', async()=>{
     if (ui.state.mode !== 'live') { setText(document.getElementById('camera-status'), 'La cámara requiere modo live. En esta demo usa los pasos simulados.'); return; }
     if (cameraStarting) return;
     cameraStarting=true;
+    const generation=++cameraGeneration;
     const video=document.getElementById('camera-preview');
     try {
       cameraMonitor?.stop(); video.hidden=false;
-      cameraMonitor=await startCameraMonitor({video,onStatus:message=>setText(document.getElementById('camera-status'),message),onFrame:async imageDataUrl=>{
+      const monitor=await startCameraMonitor({video,onStatus:message=>setText(document.getElementById('camera-status'),message),onFrame:async imageDataUrl=>{
         const payload=await requestJson(API_ROUTES.observe,{method:'POST',body:{imageDataUrl},token:ui.token,timeout:60000});
+        if(generation!==cameraGeneration)return;
         if(payload.announcement){appendMessage({role:'agent',text:payload.announcement.text,mode:ui.state.mode,model:payload.announcement.model});if(ui.voiceEnabled)speak(payload.announcement.text);}
         await loadState({silent:true});
       }});
+      if(generation!==cameraGeneration)monitor.stop();else cameraMonitor=monitor;
     }catch(error){setText(document.getElementById('camera-status'),error.message);}
     finally{cameraStarting=false;}
   });
-  document.getElementById('camera-stop')?.addEventListener('click',()=>{cameraMonitor?.stop();cameraMonitor=null;});
+  document.getElementById('camera-stop')?.addEventListener('click',()=>{cameraGeneration++;cameraMonitor?.stop();cameraMonitor=null;setText(document.getElementById('camera-status'),'Cámara apagada');});
   window.addEventListener('pagehide',()=>{cameraMonitor?.stop();stopSpeaking();});
 
   /* ── Micrófono ── */
